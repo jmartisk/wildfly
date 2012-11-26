@@ -51,7 +51,7 @@ import static org.jboss.as.test.clustering.ClusteringTestConstants.*;
 @RunAsClient
 public class StatefulPassivationExpirationTestCase extends ClusterPassivationTestBase {
 
-    private static Logger log = Logger.getLogger(ClusterPassivationTestCase.class);
+    private static Logger log = Logger.getLogger(StatefulPassivationExpirationTestCase.class);
     protected static InitialContext context;
     private static final String ARCHIVE_NAME = "stateful-passivation-expiration";
 
@@ -86,8 +86,6 @@ public class StatefulPassivationExpirationTestCase extends ClusterPassivationTes
         WebArchive war = ShrinkWrap.create(WebArchive.class, ARCHIVE_NAME + ".war");
         war.addClasses(StatefulBeanBase.class, StatefulBean.class, StatefulRemote.class, StatefulRemoteHome.class);
         war.addClasses(NodeNameGetter.class, NodeInfoServlet.class);
-//        war.addAsWebInfResource(ClusterPassivationDDTestCase.class.getPackage(), "ejb-jar-with-stateful-timeout.xml", "ejb-jar.xml");
-//        war.addAsWebInfResource(ClusterPassivationDDTestCase.class.getPackage(), "jboss-ejb3.xml", "jboss-ejb3.xml");
         log.info(war.toString(true));
         return war;
     }
@@ -121,12 +119,6 @@ public class StatefulPassivationExpirationTestCase extends ClusterPassivationTes
         }
         long end = System.currentTimeMillis();
         log.info("End bean creation, elapsed="+(end - start));
-/*
-
-        try {
-        Thread.sleep(180000);
-        } catch(Exception e) {}
-*/
 
         int N = 5000;
         long min = 99999, max = 0, maxInactive = 0;
