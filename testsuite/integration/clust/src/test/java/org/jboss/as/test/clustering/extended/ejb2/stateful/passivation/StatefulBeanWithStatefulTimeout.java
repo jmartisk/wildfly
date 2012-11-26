@@ -27,14 +27,17 @@ import org.jboss.ejb3.annotation.Clustered;
 import javax.ejb.RemoteHome;
 import javax.ejb.SessionBean;
 import javax.ejb.Stateful;
+import javax.ejb.StatefulTimeout;
+import java.util.concurrent.TimeUnit;
 
 /**
- * @author Ondrej Chaloupka
+ * @author Jan Martiska
  */
 @Stateful
 @Clustered
 @RemoteHome(StatefulRemoteHome.class)
-public class StatefulBean extends StatefulBeanBase implements SessionBean {
+@StatefulTimeout(value = 1, unit = TimeUnit.MILLISECONDS)
+public class StatefulBeanWithStatefulTimeout extends StatefulBeanBase implements SessionBean {
     private static final long serialVersionUID = 1L;
 
 }

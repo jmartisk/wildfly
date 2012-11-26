@@ -84,7 +84,7 @@ public class StatefulPassivationExpirationTestCase extends ClusterPassivationTes
 
     private static Archive<?> createDeployment() {
         WebArchive war = ShrinkWrap.create(WebArchive.class, ARCHIVE_NAME + ".war");
-        war.addClasses(StatefulBeanBase.class, StatefulBean.class, StatefulRemote.class, StatefulRemoteHome.class);
+        war.addClasses(StatefulBeanBase.class, StatefulBeanWithStatefulTimeout.class, StatefulRemote.class, StatefulRemoteHome.class);
         war.addClasses(NodeNameGetter.class, NodeInfoServlet.class);
         log.info(war.toString(true));
         return war;
@@ -105,7 +105,7 @@ public class StatefulPassivationExpirationTestCase extends ClusterPassivationTes
         EJBClientContextSelector.setup("cluster/ejb3/stateful/failover/sfsb-failover-jboss-ejb-client.properties");
 
         int beanCount = 500;
-        StatefulRemoteHome home = (StatefulRemoteHome) context.lookup("ejb:/" + ARCHIVE_NAME + "/" + StatefulBean.class.getSimpleName() + "!"
+        StatefulRemoteHome home = (StatefulRemoteHome) context.lookup("ejb:/" + ARCHIVE_NAME + "/" + StatefulBeanWithStatefulTimeout.class.getSimpleName() + "!"
                 + StatefulRemoteHome.class.getName());
 
         long start = System.currentTimeMillis();
