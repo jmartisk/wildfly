@@ -22,13 +22,15 @@
 
 package org.jboss.as.test.clustering.extended.ejb2.stateful.passivation;
 
+import java.rmi.RemoteException;
+
 /**
  * @author Ondrej Chaloupka
  */
 public interface StatefulRemote extends javax.ejb.EJBObject {
-    int getNumber();
-    String setNumber(int number);
-    String incrementNumber();
-    void setPassivationNode(String node);
-    String getPassivatedBy();
+    int getNumber() throws RemoteException;
+    String setNumber(int number) throws RemoteException;
+    String incrementNumber() throws RemoteException;
+    void setPassivationNode(String node) throws RemoteException;
+    String getPassivatedBy() throws RemoteException;
 }

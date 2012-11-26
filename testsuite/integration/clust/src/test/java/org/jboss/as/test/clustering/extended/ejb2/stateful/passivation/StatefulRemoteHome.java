@@ -25,6 +25,6 @@ package org.jboss.as.test.clustering.extended.ejb2.stateful.passivation;
 import javax.ejb.EJBHome;
 
 public interface StatefulRemoteHome extends EJBHome {
-    public StatefulRemote create() throws java.rmi.RemoteException, javax.ejb.CreateException;    
-    
+    public StatefulRemote create() throws java.rmi.RemoteException, javax.ejb.CreateException;
+
 }

@@ -22,13 +22,12 @@
 
 package org.jboss.as.test.clustering.extended.ejb2.stateful.passivation;
 
-import java.rmi.RemoteException;
+import org.jboss.as.test.clustering.NodeNameGetter;
+import org.jboss.logging.Logger;
 
 import javax.ejb.EJBException;
 import javax.ejb.SessionContext;
-
-import org.jboss.as.test.clustering.NodeNameGetter;
-import org.jboss.logging.Logger;
+import java.rmi.RemoteException;
 
 /**
  * @author Ondrej Chaloupka
@@ -41,7 +40,8 @@ public abstract class StatefulBeanBase {
     protected String actIfIsNode;
     protected int postActivateCalled = 0;
     protected int prePassivateCalled = 0;
-       
+    protected String name;
+
     /**
      * Getting number.
      */
@@ -71,13 +71,13 @@ public abstract class StatefulBeanBase {
     public void setPassivationNode(String nodeName) {
         this.actIfIsNode = nodeName;
     }
-    
+
     /** 
      * Creating method for home interface...
      */
     public void ejbCreate() throws java.rmi.RemoteException, javax.ejb.CreateException {
     }
-    
+
     /** 
      * @Override on SessionBean
      */
@@ -104,7 +104,7 @@ public abstract class StatefulBeanBase {
      * @Override on SessionBean
      */
     public void ejbRemove() throws EJBException, RemoteException {
-        
+        log.info("ejbRemove on instance id=" + number);
     }
 
     /** 

@@ -22,13 +22,13 @@
 
 package org.jboss.as.test.clustering.extended.ejb2.stateful.passivation;
 
-import java.rmi.RemoteException;
+import org.jboss.ejb3.annotation.Clustered;
 
-import javax.ejb.EJBException;
 import javax.ejb.RemoteHome;
 import javax.ejb.SessionBean;
 import javax.ejb.Stateful;
-import org.jboss.ejb3.annotation.Clustered;
+import javax.ejb.StatefulTimeout;
+import java.util.concurrent.TimeUnit;
 
 /**
  * @author Ondrej Chaloupka
@@ -36,6 +36,7 @@ import org.jboss.ejb3.annotation.Clustered;
 @Stateful
 @Clustered
 @RemoteHome(StatefulRemoteHome.class)
+@StatefulTimeout(value = 1, unit = TimeUnit.MILLISECONDS)
 public class StatefulBean extends StatefulBeanBase implements SessionBean {
     private static final long serialVersionUID = 1L;
 
