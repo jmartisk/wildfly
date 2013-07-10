@@ -23,11 +23,6 @@ package org.jboss.as.test.patching;
 
 import org.jboss.as.test.integration.management.util.CLIWrapper;
 
-import java.lang.Enum;
-import java.lang.Exception;
-import java.lang.String;
-import java.lang.StringBuilder;
-
 /**
  * @author Jan Martiska
  */
