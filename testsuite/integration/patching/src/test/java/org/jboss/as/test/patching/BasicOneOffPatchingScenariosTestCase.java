@@ -22,7 +22,7 @@
 package org.jboss.as.test.patching;
 
 import java.io.File;
-
+import com.google.common.base.Joiner;
 import org.jboss.arquillian.container.test.api.ContainerController;
 import org.jboss.arquillian.container.test.api.RunAsClient;
 import org.jboss.arquillian.junit.Arquillian;
@@ -103,6 +103,83 @@ public class BasicOneOffPatchingScenariosTestCase {
         Assert.assertFalse("The patch " + patchID + " NOT should be listed as installed" ,
                 CliUtilsForPatching.getInstalledPatches().contains(patchID));
 
+        controller.stop(CONTAINER);
+    }
+
+    /**
+     * Prepare a one-off patch which adds multiple (2) misc files. Apply it, check that the files was created.
+     * Roll it back, check that the files was deleted and apply it again to make sure re-applying works as expected
+     */
+    @Test
+    public void testOneOffPatchAddingMultipleMiscFiles() throws Exception {
+        // prepare the patch
+        File tempDir = mkdir(new File(System.getProperty("java.io.tmpdir")), randomString());
+        String patchID = randomString();
+        File oneOffPatchDir = mkdir(tempDir, patchID);
+
+        final String[] testFileSegments1 =  new String[] {"testDir1", "testFile1.txt"};
+        final String testFilePath1 = Joiner.on("/").join(PatchingTestUtil.AS_DISTRIBUTION, testFileSegments1);
+        final String testContent1 = "test content1";
+
+        final String[] testFileSegments2 = new String[] {"testFile1.txt"};
+        final String testFilePath2 = Joiner.on("/").join(PatchingTestUtil.AS_DISTRIBUTION, testFileSegments2);
+        final String testContent2 = "test content2";
+
+        ContentModification miscFileAdded1 = ContentModificationUtils.addMisc(oneOffPatchDir, patchID,
+                testContent1, testFileSegments1);
+        ContentModification miscFileAdded2 = ContentModificationUtils.addMisc(oneOffPatchDir, patchID,
+                testContent2, testFileSegments2);
+        ProductConfig productConfig = new ProductConfig(PRODUCT, AS_VERSION, "main");
+        Patch oneOffPatch = PatchBuilder.create()
+                .setPatchId(patchID)
+                .setDescription("A one-off patch adding a misc file.")
+                .oneOffPatchIdentity(productConfig.getProductName(), productConfig.getProductVersion())
+                .getParent()
+                .addContentModification(miscFileAdded1)
+                .addContentModification(miscFileAdded2)
+                .build();
+        PatchingTestUtil.createPatchXMLFile(oneOffPatchDir, oneOffPatch);
+        File zippedPatch = PatchingTestUtil.createZippedPatchFile(oneOffPatchDir, patchID);
+
+        // apply the patch
+        controller.start(CONTAINER);
+        CliUtilsForPatching.applyPatch(zippedPatch.getAbsolutePath());
+        controller.stop(CONTAINER);
+
+        // check if patch is installed, if files exists and check content of files
+        controller.start(CONTAINER);
+        Assert.assertTrue("The patch " + patchID + " should be listed as installed", CliUtilsForPatching.getInstalledPatches().contains(patchID));
+        Assert.assertTrue("File1 " + testFilePath1 + " should exist", new File(testFilePath1).exists());
+        Assert.assertTrue("File2 " + testFilePath2 + " should exist", new File(testFilePath2).exists());
+        String patchContent = PatchingTestUtil.readFile(testFilePath1);
+        Assert.assertEquals("check content of file1 after applying patch", testContent1, patchContent);
+        patchContent = PatchingTestUtil.readFile(testFilePath2);
+        Assert.assertEquals("check content of file2 after applying patch", testContent2, patchContent);
+
+        // rollback the patch
+        CliUtilsForPatching.rollbackPatch(patchID);
+        controller.stop(CONTAINER);
+
+        // check if patch is uninstalled, if files don't exists
+        controller.start(CONTAINER);
+        Assert.assertFalse("The patch " + patchID + " NOT should be listed as installed" ,
+                CliUtilsForPatching.getInstalledPatches().contains(patchID));
+        Assert.assertFalse("File1 + " + testFilePath1 + " should have been deleted", new File(testFilePath1).exists());
+        Assert.assertFalse("File2 + " + testFilePath1 + " should have been deleted", new File(testFilePath1).exists());
+
+        // reapply the patch
+        CliUtilsForPatching.applyPatch(zippedPatch.getAbsolutePath());
+        controller.stop(CONTAINER);
+
+        // check if patch is installed, if files exists and check content of files
+        controller.start(CONTAINER);
+        Assert.assertTrue("The patch " + patchID + " should be listed as installed", CliUtilsForPatching.getInstalledPatches().contains(patchID));
+        Assert.assertTrue("File1 " + testFilePath1 + " should exist", new File(testFilePath1).exists());
+        Assert.assertTrue("File2 " + testFilePath2 + " should exist", new File(testFilePath2).exists());
+        patchContent = PatchingTestUtil.readFile(testFilePath1);
+        Assert.assertEquals("check content of file1 after applying patch", testContent1, patchContent);
+        patchContent = PatchingTestUtil.readFile(testFilePath2);
+        Assert.assertEquals("check content of file2 after applying patch", testContent2, patchContent);
         controller.stop(CONTAINER);
     }
 
