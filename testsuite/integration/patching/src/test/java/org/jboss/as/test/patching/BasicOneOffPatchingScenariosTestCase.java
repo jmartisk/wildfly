@@ -216,18 +216,107 @@ public class BasicOneOffPatchingScenariosTestCase {
         CliUtilsForPatching.applyPatch(zippedPatch.getAbsolutePath());
         controller.stop(CONTAINER);
 
-        //check content
+        //check if patch is installed, check content of file
+        controller.start(CONTAINER);
+        Assert.assertTrue("The patch " + patchID + " should be listed as installed", CliUtilsForPatching.getInstalledPatches().contains(patchID));
         String patchContent = PatchingTestUtil.readFile(testFilePath);
         Assert.assertEquals(testContent, patchContent);
 
         //rollback the patch
+        CliUtilsForPatching.rollbackPatch(patchID);
+        controller.stop(CONTAINER);
+
+        //check if patch is uninstalled, check content of file
         controller.start(CONTAINER);
+        Assert.assertFalse("The patch " + patchID + " NOT should be listed as installed" ,
+                CliUtilsForPatching.getInstalledPatches().contains(patchID));
+        patchContent =  PatchingTestUtil.readFile(testFilePath);
+        Assert.assertEquals("check content of file after rollback", originalContent, patchContent);
+
+        //reapply the patch
+        CliUtilsForPatching.applyPatch(zippedPatch.getAbsolutePath());
+        controller.stop(CONTAINER);
+
+        //check if patch is installed, check content of file
+        controller.start(CONTAINER);
+        Assert.assertTrue("The patch " + patchID + " should be listed as installed", CliUtilsForPatching.getInstalledPatches().contains(patchID));
+        patchContent = PatchingTestUtil.readFile(testFilePath);
+        Assert.assertEquals("check content of file after reapplying", testContent, patchContent);
+        controller.stop(CONTAINER);
+    }
+
+    /**
+     * Prepare a one-off patch which modifies multiple (2) misc file. Apply it, check that the files was replaced.
+     * Roll it back, check that the files was restored successfully and apply it again to make sure re-applying works as expected
+     */
+    @Test
+    public void testOneOffPatchModifyingMultipleMiscFiles() throws Exception {
+        // prepare the patch
+        File tempDir = mkdir(new File(System.getProperty("java.io.tmpdir")), randomString());
+        String patchID = randomString();
+        File oneOffPatchDir = mkdir(tempDir, patchID);
+
+        final String testFilePath1 = PatchingTestUtil.AS_DISTRIBUTION + "/README.txt";
+        final String testContent1 = "test content1";
+        final String originalContent1 = PatchingTestUtil.readFile(testFilePath1);
+
+        final String testFilePath2 = PatchingTestUtil.AS_DISTRIBUTION + "/LICENSE.txt";
+        final String testContent2 = "test content2";
+        final String originalContent2 = PatchingTestUtil.readFile(testFilePath2);
+
+        ContentModification miscFileModified1 = ContentModificationUtils.modifyMisc(oneOffPatchDir, patchID, testContent1, new File(testFilePath1), "README.txt");
+        ContentModification miscFileModified2 = ContentModificationUtils.modifyMisc(oneOffPatchDir, patchID, testContent2, new File(testFilePath2), "LICENSE.txt");
+        ProductConfig productConfig = new ProductConfig(PRODUCT, AS_VERSION, "consoleSlot");
+        Patch oneOffPatch = PatchBuilder.create()
+                .setPatchId(patchID)
+                .setDescription("A one-off patch modifying multiple misc files.")
+                .oneOffPatchIdentity(productConfig.getProductName(), productConfig.getProductVersion())
+                .getParent()
+                .addContentModification(miscFileModified1)
+                .addContentModification(miscFileModified2)
+                .build();
+        PatchingTestUtil.createPatchXMLFile(oneOffPatchDir, oneOffPatch);
+        File zippedPatch = PatchingTestUtil.createZippedPatchFile(oneOffPatchDir, patchID);
+
+
+        // apply the patch
+        controller.start(CONTAINER);
+        CliUtilsForPatching.applyPatch(zippedPatch.getAbsolutePath());
+        controller.stop(CONTAINER);
+
+        //check content
+        controller.start(CONTAINER);
+        Assert.assertTrue("The patch " + patchID + " should be listed as installed", CliUtilsForPatching.getInstalledPatches().contains(patchID));
+        String patchContent1 = PatchingTestUtil.readFile(testFilePath1);
+        Assert.assertEquals("check content of applying patch1", testContent1, patchContent1);
+        String patchContent2 = PatchingTestUtil.readFile(testFilePath2);
+        Assert.assertEquals("check content of applying patch2", testContent2, patchContent2);
+
+        //rollback the patch
         CliUtilsForPatching.rollbackPatch(patchID);
         controller.stop(CONTAINER);
 
         //check content
-        patchContent =  PatchingTestUtil.readFile(testFilePath);
-        Assert.assertEquals(originalContent, patchContent);
+        controller.start(CONTAINER);
+        Assert.assertFalse("The patch " + patchID + " NOT should be listed as installed" ,
+                CliUtilsForPatching.getInstalledPatches().contains(patchID));
+        patchContent1 =  PatchingTestUtil.readFile(testFilePath1);
+        Assert.assertEquals("check content of file after rollback1", originalContent1, patchContent1);
+        patchContent2 =  PatchingTestUtil.readFile(testFilePath2);
+        Assert.assertEquals("check content of file after rollback2", originalContent2, patchContent2);
+
+        //reapply the patch
+        CliUtilsForPatching.applyPatch(zippedPatch.getAbsolutePath());
+        controller.stop(CONTAINER);
+
+        //check content
+        controller.start(CONTAINER);
+        Assert.assertTrue("The patch " + patchID + " should be listed as installed", CliUtilsForPatching.getInstalledPatches().contains(patchID));
+        patchContent1 = PatchingTestUtil.readFile(testFilePath1);
+        Assert.assertEquals("check content of file after reapplying1", testContent1, patchContent1);
+        patchContent2 = PatchingTestUtil.readFile(testFilePath2);
+        Assert.assertEquals("check content of file after reapplying2", testContent2, patchContent2);
+        controller.stop(CONTAINER);
     }
 
     /**
