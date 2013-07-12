@@ -320,6 +320,68 @@ public class BasicOneOffPatchingScenariosTestCase {
     }
 
     /**
+     * Prepare a one-off patch which removes a misc file. Apply it, check that the file was removed.
+     * Roll it back, check that the file was restored and reapply patch
+     */
+    @Test
+    public void testOneOffPatchDeletingAMiscFile() throws Exception {
+        // prepare the patch
+        File tempDir = mkdir(new File(System.getProperty("java.io.tmpdir")), randomString());
+        String patchID = randomString();
+        File oneOffPatchDir = mkdir(tempDir, patchID);
+
+        final String testFilePath = PatchingTestUtil.AS_DISTRIBUTION + "/README.txt";
+
+        // store original content
+        String originalContent = PatchingTestUtil.readFile(testFilePath);
+
+        ContentModification miscFileRemoved = ContentModificationUtils.removeMisc(new File(testFilePath), "");
+        ProductConfig productConfig = new ProductConfig(PRODUCT, AS_VERSION, "main");
+        Patch oneOffPatch = PatchBuilder.create()
+                .setPatchId(patchID)
+                .setDescription("A one-off patch removing a misc file.")
+                .oneOffPatchIdentity(productConfig.getProductName(), productConfig.getProductVersion())
+                .getParent()
+                .addContentModification(miscFileRemoved)
+                .build();
+        PatchingTestUtil.createPatchXMLFile(oneOffPatchDir, oneOffPatch);
+        File zippedPatch = PatchingTestUtil.createZippedPatchFile(oneOffPatchDir, patchID);
+
+        // apply the patch
+        controller.start(CONTAINER);
+        CliUtilsForPatching.applyPatch(zippedPatch.getAbsolutePath());
+        controller.stop(CONTAINER);
+
+        // check that patch is installed, file doesn't exist
+        controller.start(CONTAINER);
+        Assert.assertTrue("The patch " + patchID + " should be listed as installed" ,
+                CliUtilsForPatching.getInstalledPatches().contains(patchID));
+        Assert.assertFalse("File " + testFilePath + " should have been deleted", new File(testFilePath).exists());
+
+        // rollback the patch
+        CliUtilsForPatching.rollbackPatch(patchID);
+        controller.stop(CONTAINER);
+
+        // check that the patch is uninstalled and file is restored
+        controller.start(CONTAINER);
+        Assert.assertFalse("The patch " + patchID + " NOT should be listed as installed" ,
+                CliUtilsForPatching.getInstalledPatches().contains(patchID));
+        Assert.assertTrue("File + " + testFilePath + " should be restored", new File(testFilePath).exists());
+        Assert.assertEquals("Unexpected contents of misc file", originalContent, PatchingTestUtil.readFile(testFilePath));
+
+        // reapply patch
+        CliUtilsForPatching.applyPatch(zippedPatch.getAbsolutePath());
+        controller.stop(CONTAINER);
+
+        // check that patch is installed, file doesn't exist
+        controller.start(CONTAINER);
+        Assert.assertTrue("The patch " + patchID + " should be listed as installed" ,
+                CliUtilsForPatching.getInstalledPatches().contains(patchID));
+        Assert.assertFalse("File " + testFilePath + " should have been deleted", new File(testFilePath).exists());
+        controller.stop(CONTAINER);
+    }
+
+    /**
      * adds a new module "org.wildfly.awesomemodule" to the base layer
      * @throws Exception
      */
