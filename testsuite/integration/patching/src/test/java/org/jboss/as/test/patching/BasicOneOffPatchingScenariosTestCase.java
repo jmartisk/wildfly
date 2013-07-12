@@ -118,11 +118,11 @@ public class BasicOneOffPatchingScenariosTestCase {
         File oneOffPatchDir = mkdir(tempDir, patchID);
 
         final String[] testFileSegments1 =  new String[] {"testDir1", "testFile1.txt"};
-        final String testFilePath1 = Joiner.on("/").join(PatchingTestUtil.AS_DISTRIBUTION, testFileSegments1);
+        final String testFilePath1 = PatchingTestUtil.AS_DISTRIBUTION + "/" + Joiner.on("/").join(testFileSegments1);
         final String testContent1 = "test content1";
 
         final String[] testFileSegments2 = new String[] {"testFile1.txt"};
-        final String testFilePath2 = Joiner.on("/").join(PatchingTestUtil.AS_DISTRIBUTION, testFileSegments2);
+        final String testFilePath2 = PatchingTestUtil.AS_DISTRIBUTION + "/" + Joiner.on("/").join(testFileSegments2);
         final String testContent2 = "test content2";
 
         ContentModification miscFileAdded1 = ContentModificationUtils.addMisc(oneOffPatchDir, patchID,
