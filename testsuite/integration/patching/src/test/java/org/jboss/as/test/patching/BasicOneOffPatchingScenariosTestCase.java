@@ -21,12 +21,6 @@
 
 package org.jboss.as.test.patching;
 
-import static org.jboss.as.patching.IoUtils.mkdir;
-import static org.jboss.as.test.patching.PatchingTestUtil.AS_VERSION;
-import static org.jboss.as.test.patching.PatchingTestUtil.CONTAINER;
-import static org.jboss.as.test.patching.PatchingTestUtil.PRODUCT;
-import static org.jboss.as.test.patching.PatchingTestUtil.randomString;
-
 import java.io.File;
 
 import org.jboss.arquillian.container.test.api.ContainerController;
@@ -42,12 +36,18 @@ import org.junit.Assert;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
+import static org.jboss.as.patching.IoUtils.mkdir;
+import static org.jboss.as.test.patching.PatchingTestUtil.AS_VERSION;
+import static org.jboss.as.test.patching.PatchingTestUtil.CONTAINER;
+import static org.jboss.as.test.patching.PatchingTestUtil.PRODUCT;
+import static org.jboss.as.test.patching.PatchingTestUtil.randomString;
+
 /**
  * @author Jan Martiska
  */
 @RunWith(Arquillian.class)
 @RunAsClient
-public class OneOffPatchTestCase {
+public class BasicOneOffPatchingScenariosTestCase {
 
     @ArquillianResource
     private ContainerController controller;

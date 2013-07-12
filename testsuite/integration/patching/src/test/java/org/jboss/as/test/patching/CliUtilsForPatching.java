@@ -46,8 +46,8 @@ public class CliUtilsForPatching {
      * @param patchFilePath absolute path to the ZIP file containing the patch
      * @throws Exception
      */
-    public static void applyPatch(String patchFilePath) throws Exception {
-        applyPatch(patchFilePath, null);
+    public static boolean applyPatch(String patchFilePath) throws Exception {
+        return applyPatch(patchFilePath, null);
     }
 
 
@@ -58,7 +58,7 @@ public class CliUtilsForPatching {
      * @param args          conflict resolution arguments or null
      * @throws Exception
      */
-    public static void applyPatch(String patchFilePath, String... args) throws Exception {
+    public static boolean applyPatch(String patchFilePath, String... args) throws Exception {
         CLIWrapper cli = null;
         try {
             cli = new CLIWrapper(true);
@@ -71,7 +71,7 @@ public class CliUtilsForPatching {
             }
             builder.append(" ").append(patchFilePath);
             String command = builder.toString();
-            cli.sendLine(command);
+            return cli.sendLine(command, true);
         } finally {
             if (cli != null) {
                 cli.quit();
@@ -85,8 +85,8 @@ public class CliUtilsForPatching {
      * @param oneOffPatchID the ID of the patch that should be rolled back
      * @throws Exception
      */
-    public static void rollbackPatch(String oneOffPatchID) throws Exception {
-        rollbackPatch(oneOffPatchID, null);
+    public static boolean rollbackPatch(String oneOffPatchID) throws Exception {
+        return rollbackPatch(oneOffPatchID, null);
     }
 
     /**
@@ -96,7 +96,7 @@ public class CliUtilsForPatching {
      * @param args          conflict resolution arguments, rollback arguments
      * @throws Exception
      */
-    public static void rollbackPatch(String oneoffPatchID, String... args) throws Exception {
+    public static boolean rollbackPatch(String oneoffPatchID, String... args) throws Exception {
         CLIWrapper cli = null;
         try {
             cli = new CLIWrapper(true);
@@ -108,7 +108,7 @@ public class CliUtilsForPatching {
             }
             builder.append(" --patch-id=").append(oneoffPatchID);
             String command = builder.toString();
-            cli.sendLine(command);
+            return cli.sendLine(command, true);
         } finally {
             if (cli != null) {
                 cli.quit();
@@ -177,7 +177,7 @@ public class CliUtilsForPatching {
         CLIWrapper cli = null;
         try {
             cli = new CLIWrapper(true);
-            cli.sendLine("patch info");
+            cli.sendLine("patch info", true);
             String response = cli.readOutput();
             ModelNode responseNode = ModelNode.fromJSONString(response);
             ModelNode respHeaders = responseNode.get("response-headers");

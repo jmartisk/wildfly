@@ -35,6 +35,7 @@ import org.jboss.as.patching.ZipUtils;
 import org.jboss.as.patching.metadata.ModuleItem;
 import org.jboss.as.patching.metadata.Patch;
 import org.jboss.as.patching.metadata.PatchXml;
+import org.junit.Assert;
 
 import static java.lang.String.format;
 import static org.jboss.as.patching.IoUtils.safeClose;
@@ -68,6 +69,21 @@ public class PatchingTestUtil {
         } finally {
             if(scanner != null)
                 scanner.close();
+        }
+    }
+
+    public static void setFileContent(String filePath, String content) throws IOException {
+        OutputStream os = null;
+        try {
+            File file = new File(filePath);
+            file.delete();
+            Assert.assertTrue("Cannot create new file", file.createNewFile());
+            os = new FileOutputStream(file);
+            os.write(content.getBytes());
+            os.flush();
+        } finally {
+            if(os != null)
+                os.close();
         }
     }
 
