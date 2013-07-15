@@ -21,7 +21,6 @@
 
 package org.jboss.as.test.patching;
 
-import java.io.File;
 import com.google.common.base.Joiner;
 import org.jboss.arquillian.container.test.api.ContainerController;
 import org.jboss.arquillian.container.test.api.RunAsClient;
@@ -36,11 +35,10 @@ import org.junit.Assert;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
+import java.io.File;
+
 import static org.jboss.as.patching.IoUtils.mkdir;
-import static org.jboss.as.test.patching.PatchingTestUtil.AS_VERSION;
-import static org.jboss.as.test.patching.PatchingTestUtil.CONTAINER;
-import static org.jboss.as.test.patching.PatchingTestUtil.PRODUCT;
-import static org.jboss.as.test.patching.PatchingTestUtil.randomString;
+import static org.jboss.as.test.patching.PatchingTestUtil.*;
 
 /**
  * @author Jan Martiska
@@ -79,19 +77,19 @@ public class BasicOneOffPatchingScenariosTestCase {
                     .getParent()
                 .addContentModification(miscFileAdded)
                 .build();
-        PatchingTestUtil.createPatchXMLFile(oneOffPatchDir, oneOffPatch);
-        File zippedPatch = PatchingTestUtil.createZippedPatchFile(oneOffPatchDir, patchID);
+        createPatchXMLFile(oneOffPatchDir, oneOffPatch);
+        File zippedPatch = createZippedPatchFile(oneOffPatchDir, patchID);
 
         // apply the patch
         controller.start(CONTAINER);
         CliUtilsForPatching.applyPatch(zippedPatch.getAbsolutePath());
         controller.stop(CONTAINER);
         controller.start(CONTAINER);
-        String path = PatchingTestUtil.AS_DISTRIBUTION+"/awesomeDirectory/awesomeFile";
+        String path = AS_DISTRIBUTION + FILE_SEPARATOR + Joiner.on(FILE_SEPARATOR).join(new String[] {"awesomeDirectory", "awesomeFile"});
         Assert.assertTrue("File " + path + " should exist", new File(path).exists());
         Assert.assertTrue("The patch " + patchID + " should be listed as installed" ,
                 CliUtilsForPatching.getInstalledPatches().contains(patchID));
-        Assert.assertEquals("Unexpected contents of misc file", fileContent, PatchingTestUtil.readFile(path));
+        Assert.assertEquals("Unexpected contents of misc file", fileContent, readFile(path));
         controller.stop(CONTAINER);
         controller.start(CONTAINER);
 
@@ -118,11 +116,11 @@ public class BasicOneOffPatchingScenariosTestCase {
         File oneOffPatchDir = mkdir(tempDir, patchID);
 
         final String[] testFileSegments1 =  new String[] {"testDir1", "testFile1.txt"};
-        final String testFilePath1 = PatchingTestUtil.AS_DISTRIBUTION + "/" + Joiner.on("/").join(testFileSegments1);
+        final String testFilePath1 = AS_DISTRIBUTION + FILE_SEPARATOR+ Joiner.on(FILE_SEPARATOR).join(testFileSegments1);
         final String testContent1 = "test content1";
 
         final String[] testFileSegments2 = new String[] {"testFile1.txt"};
-        final String testFilePath2 = PatchingTestUtil.AS_DISTRIBUTION + "/" + Joiner.on("/").join(testFileSegments2);
+        final String testFilePath2 = AS_DISTRIBUTION + FILE_SEPARATOR + Joiner.on(FILE_SEPARATOR).join(testFileSegments2);
         final String testContent2 = "test content2";
 
         ContentModification miscFileAdded1 = ContentModificationUtils.addMisc(oneOffPatchDir, patchID,
@@ -138,8 +136,8 @@ public class BasicOneOffPatchingScenariosTestCase {
                 .addContentModification(miscFileAdded1)
                 .addContentModification(miscFileAdded2)
                 .build();
-        PatchingTestUtil.createPatchXMLFile(oneOffPatchDir, oneOffPatch);
-        File zippedPatch = PatchingTestUtil.createZippedPatchFile(oneOffPatchDir, patchID);
+        createPatchXMLFile(oneOffPatchDir, oneOffPatch);
+        File zippedPatch = createZippedPatchFile(oneOffPatchDir, patchID);
 
         // apply the patch
         controller.start(CONTAINER);
@@ -151,9 +149,9 @@ public class BasicOneOffPatchingScenariosTestCase {
         Assert.assertTrue("The patch " + patchID + " should be listed as installed", CliUtilsForPatching.getInstalledPatches().contains(patchID));
         Assert.assertTrue("File1 " + testFilePath1 + " should exist", new File(testFilePath1).exists());
         Assert.assertTrue("File2 " + testFilePath2 + " should exist", new File(testFilePath2).exists());
-        String patchContent = PatchingTestUtil.readFile(testFilePath1);
+        String patchContent = readFile(testFilePath1);
         Assert.assertEquals("check content of file1 after applying patch", testContent1, patchContent);
-        patchContent = PatchingTestUtil.readFile(testFilePath2);
+        patchContent = readFile(testFilePath2);
         Assert.assertEquals("check content of file2 after applying patch", testContent2, patchContent);
 
         // rollback the patch
@@ -176,9 +174,9 @@ public class BasicOneOffPatchingScenariosTestCase {
         Assert.assertTrue("The patch " + patchID + " should be listed as installed", CliUtilsForPatching.getInstalledPatches().contains(patchID));
         Assert.assertTrue("File1 " + testFilePath1 + " should exist", new File(testFilePath1).exists());
         Assert.assertTrue("File2 " + testFilePath2 + " should exist", new File(testFilePath2).exists());
-        patchContent = PatchingTestUtil.readFile(testFilePath1);
+        patchContent = readFile(testFilePath1);
         Assert.assertEquals("check content of file1 after applying patch", testContent1, patchContent);
-        patchContent = PatchingTestUtil.readFile(testFilePath2);
+        patchContent = readFile(testFilePath2);
         Assert.assertEquals("check content of file2 after applying patch", testContent2, patchContent);
         controller.stop(CONTAINER);
     }
@@ -194,9 +192,9 @@ public class BasicOneOffPatchingScenariosTestCase {
         String patchID = randomString();
         File oneOffPatchDir = mkdir(tempDir, patchID);
 
-        final String testFilePath = PatchingTestUtil.AS_DISTRIBUTION + "/README.txt";
+        final String testFilePath = AS_DISTRIBUTION + FILE_SEPARATOR + "README.txt";
         final String testContent = "test content";
-        final String originalContent = PatchingTestUtil.readFile(testFilePath);
+        final String originalContent = readFile(testFilePath);
 
         ContentModification miscFileModified = ContentModificationUtils.modifyMisc(oneOffPatchDir, patchID, testContent, new File(testFilePath), "README.txt");
         ProductConfig productConfig = new ProductConfig(PRODUCT, AS_VERSION, "consoleSlot");
@@ -207,8 +205,8 @@ public class BasicOneOffPatchingScenariosTestCase {
                 .getParent()
                 .addContentModification(miscFileModified)
                 .build();
-        PatchingTestUtil.createPatchXMLFile(oneOffPatchDir, oneOffPatch);
-        File zippedPatch = PatchingTestUtil.createZippedPatchFile(oneOffPatchDir, patchID);
+        createPatchXMLFile(oneOffPatchDir, oneOffPatch);
+        File zippedPatch = createZippedPatchFile(oneOffPatchDir, patchID);
 
 
         // apply the patch
@@ -219,7 +217,7 @@ public class BasicOneOffPatchingScenariosTestCase {
         //check if patch is installed, check content of file
         controller.start(CONTAINER);
         Assert.assertTrue("The patch " + patchID + " should be listed as installed", CliUtilsForPatching.getInstalledPatches().contains(patchID));
-        String patchContent = PatchingTestUtil.readFile(testFilePath);
+        String patchContent = readFile(testFilePath);
         Assert.assertEquals(testContent, patchContent);
 
         //rollback the patch
@@ -230,7 +228,7 @@ public class BasicOneOffPatchingScenariosTestCase {
         controller.start(CONTAINER);
         Assert.assertFalse("The patch " + patchID + " NOT should be listed as installed" ,
                 CliUtilsForPatching.getInstalledPatches().contains(patchID));
-        patchContent =  PatchingTestUtil.readFile(testFilePath);
+        patchContent =  readFile(testFilePath);
         Assert.assertEquals("check content of file after rollback", originalContent, patchContent);
 
         //reapply the patch
@@ -240,7 +238,7 @@ public class BasicOneOffPatchingScenariosTestCase {
         //check if patch is installed, check content of file
         controller.start(CONTAINER);
         Assert.assertTrue("The patch " + patchID + " should be listed as installed", CliUtilsForPatching.getInstalledPatches().contains(patchID));
-        patchContent = PatchingTestUtil.readFile(testFilePath);
+        patchContent = readFile(testFilePath);
         Assert.assertEquals("check content of file after reapplying", testContent, patchContent);
         controller.stop(CONTAINER);
     }
@@ -256,13 +254,13 @@ public class BasicOneOffPatchingScenariosTestCase {
         String patchID = randomString();
         File oneOffPatchDir = mkdir(tempDir, patchID);
 
-        final String testFilePath1 = PatchingTestUtil.AS_DISTRIBUTION + "/README.txt";
+        final String testFilePath1 = AS_DISTRIBUTION + FILE_SEPARATOR + "README.txt";
         final String testContent1 = "test content1";
-        final String originalContent1 = PatchingTestUtil.readFile(testFilePath1);
+        final String originalContent1 = readFile(testFilePath1);
 
-        final String testFilePath2 = PatchingTestUtil.AS_DISTRIBUTION + "/LICENSE.txt";
+        final String testFilePath2 = AS_DISTRIBUTION + FILE_SEPARATOR + "LICENSE.txt";
         final String testContent2 = "test content2";
-        final String originalContent2 = PatchingTestUtil.readFile(testFilePath2);
+        final String originalContent2 = readFile(testFilePath2);
 
         ContentModification miscFileModified1 = ContentModificationUtils.modifyMisc(oneOffPatchDir, patchID, testContent1, new File(testFilePath1), "README.txt");
         ContentModification miscFileModified2 = ContentModificationUtils.modifyMisc(oneOffPatchDir, patchID, testContent2, new File(testFilePath2), "LICENSE.txt");
@@ -275,8 +273,8 @@ public class BasicOneOffPatchingScenariosTestCase {
                 .addContentModification(miscFileModified1)
                 .addContentModification(miscFileModified2)
                 .build();
-        PatchingTestUtil.createPatchXMLFile(oneOffPatchDir, oneOffPatch);
-        File zippedPatch = PatchingTestUtil.createZippedPatchFile(oneOffPatchDir, patchID);
+        createPatchXMLFile(oneOffPatchDir, oneOffPatch);
+        File zippedPatch = createZippedPatchFile(oneOffPatchDir, patchID);
 
 
         // apply the patch
@@ -287,9 +285,9 @@ public class BasicOneOffPatchingScenariosTestCase {
         //check content
         controller.start(CONTAINER);
         Assert.assertTrue("The patch " + patchID + " should be listed as installed", CliUtilsForPatching.getInstalledPatches().contains(patchID));
-        String patchContent1 = PatchingTestUtil.readFile(testFilePath1);
+        String patchContent1 = readFile(testFilePath1);
         Assert.assertEquals("check content of applying patch1", testContent1, patchContent1);
-        String patchContent2 = PatchingTestUtil.readFile(testFilePath2);
+        String patchContent2 = readFile(testFilePath2);
         Assert.assertEquals("check content of applying patch2", testContent2, patchContent2);
 
         //rollback the patch
@@ -300,9 +298,9 @@ public class BasicOneOffPatchingScenariosTestCase {
         controller.start(CONTAINER);
         Assert.assertFalse("The patch " + patchID + " NOT should be listed as installed" ,
                 CliUtilsForPatching.getInstalledPatches().contains(patchID));
-        patchContent1 =  PatchingTestUtil.readFile(testFilePath1);
+        patchContent1 =  readFile(testFilePath1);
         Assert.assertEquals("check content of file after rollback1", originalContent1, patchContent1);
-        patchContent2 =  PatchingTestUtil.readFile(testFilePath2);
+        patchContent2 =  readFile(testFilePath2);
         Assert.assertEquals("check content of file after rollback2", originalContent2, patchContent2);
 
         //reapply the patch
@@ -312,9 +310,9 @@ public class BasicOneOffPatchingScenariosTestCase {
         //check content
         controller.start(CONTAINER);
         Assert.assertTrue("The patch " + patchID + " should be listed as installed", CliUtilsForPatching.getInstalledPatches().contains(patchID));
-        patchContent1 = PatchingTestUtil.readFile(testFilePath1);
+        patchContent1 = readFile(testFilePath1);
         Assert.assertEquals("check content of file after reapplying1", testContent1, patchContent1);
-        patchContent2 = PatchingTestUtil.readFile(testFilePath2);
+        patchContent2 = readFile(testFilePath2);
         Assert.assertEquals("check content of file after reapplying2", testContent2, patchContent2);
         controller.stop(CONTAINER);
     }
@@ -330,10 +328,10 @@ public class BasicOneOffPatchingScenariosTestCase {
         String patchID = randomString();
         File oneOffPatchDir = mkdir(tempDir, patchID);
 
-        final String testFilePath = PatchingTestUtil.AS_DISTRIBUTION + "/README.txt";
+        final String testFilePath = AS_DISTRIBUTION + FILE_SEPARATOR + "README.txt";
 
         // store original content
-        String originalContent = PatchingTestUtil.readFile(testFilePath);
+        String originalContent = readFile(testFilePath);
 
         ContentModification miscFileRemoved = ContentModificationUtils.removeMisc(new File(testFilePath), "");
         ProductConfig productConfig = new ProductConfig(PRODUCT, AS_VERSION, "main");
@@ -344,8 +342,8 @@ public class BasicOneOffPatchingScenariosTestCase {
                 .getParent()
                 .addContentModification(miscFileRemoved)
                 .build();
-        PatchingTestUtil.createPatchXMLFile(oneOffPatchDir, oneOffPatch);
-        File zippedPatch = PatchingTestUtil.createZippedPatchFile(oneOffPatchDir, patchID);
+        createPatchXMLFile(oneOffPatchDir, oneOffPatch);
+        File zippedPatch = createZippedPatchFile(oneOffPatchDir, patchID);
 
         // apply the patch
         controller.start(CONTAINER);
@@ -367,7 +365,7 @@ public class BasicOneOffPatchingScenariosTestCase {
         Assert.assertFalse("The patch " + patchID + " NOT should be listed as installed" ,
                 CliUtilsForPatching.getInstalledPatches().contains(patchID));
         Assert.assertTrue("File + " + testFilePath + " should be restored", new File(testFilePath).exists());
-        Assert.assertEquals("Unexpected contents of misc file", originalContent, PatchingTestUtil.readFile(testFilePath));
+        Assert.assertEquals("Unexpected contents of misc file", originalContent, readFile(testFilePath));
 
         // reapply patch
         CliUtilsForPatching.applyPatch(zippedPatch.getAbsolutePath());
@@ -404,8 +402,8 @@ public class BasicOneOffPatchingScenariosTestCase {
                 .addContentModification(moduleAdded)
                 .getParent()
            .build();
-        PatchingTestUtil.createPatchXMLFile(oneOffPatchDir, oneOffPatch);
-        File zippedPatch = PatchingTestUtil.createZippedPatchFile(oneOffPatchDir, patchID);
+        createPatchXMLFile(oneOffPatchDir, oneOffPatch);
+        File zippedPatch = createZippedPatchFile(oneOffPatchDir, patchID);
 
         // apply the patch
         controller.start(CONTAINER);
@@ -459,8 +457,8 @@ public class BasicOneOffPatchingScenariosTestCase {
                 .addContentModification(moduleAdded)
                 .getParent()
                 .build();
-        PatchingTestUtil.createPatchXMLFile(oneOffPatchDir, oneOffPatch);
-        File zippedPatch = PatchingTestUtil.createZippedPatchFile(oneOffPatchDir, patchID);
+        createPatchXMLFile(oneOffPatchDir, oneOffPatch);
+        File zippedPatch = createZippedPatchFile(oneOffPatchDir, patchID);
 
         // apply the patch, roll it back, then apply again
         controller.start(CONTAINER);
