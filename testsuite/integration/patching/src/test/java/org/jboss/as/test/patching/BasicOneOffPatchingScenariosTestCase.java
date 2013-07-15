@@ -51,9 +51,10 @@ public class BasicOneOffPatchingScenariosTestCase {
     private ContainerController controller;
 
     @After
-    public void cleanup() {
+    public void cleanup() throws Exception {
         if(controller.isStarted(CONTAINER))
             controller.stop(CONTAINER);
+        CliUtilsForPatching.rollbackAll();
     }
 
     /**
@@ -84,23 +85,33 @@ public class BasicOneOffPatchingScenariosTestCase {
         controller.start(CONTAINER);
         CliUtilsForPatching.applyPatch(zippedPatch.getAbsolutePath());
         controller.stop(CONTAINER);
+
         controller.start(CONTAINER);
         String path = AS_DISTRIBUTION + FILE_SEPARATOR + Joiner.on(FILE_SEPARATOR).join(new String[] {"awesomeDirectory", "awesomeFile"});
         Assert.assertTrue("File " + path + " should exist", new File(path).exists());
         Assert.assertTrue("The patch " + patchID + " should be listed as installed" ,
                 CliUtilsForPatching.getInstalledPatches().contains(patchID));
         Assert.assertEquals("Unexpected contents of misc file", fileContent, readFile(path));
-        controller.stop(CONTAINER);
-        controller.start(CONTAINER);
+
 
         // rollback the patch
         CliUtilsForPatching.rollbackPatch(patchID);
         controller.stop(CONTAINER);
+
         controller.start(CONTAINER);
-        Assert.assertFalse("File + " + path + " should have been deleted", new File(path).exists());
         Assert.assertFalse("The patch " + patchID + " NOT should be listed as installed" ,
                 CliUtilsForPatching.getInstalledPatches().contains(patchID));
+        Assert.assertFalse("File + " + path + " should have been deleted", new File(path).exists());
 
+        //reapply patch
+        CliUtilsForPatching.applyPatch(zippedPatch.getAbsolutePath());
+        controller.stop(CONTAINER);
+
+        controller.start(CONTAINER);
+        Assert.assertTrue("File " + path + " should exist", new File(path).exists());
+        Assert.assertTrue("The patch " + patchID + " should be listed as installed" ,
+                CliUtilsForPatching.getInstalledPatches().contains(patchID));
+        Assert.assertEquals("Unexpected contents of misc file", fileContent, readFile(path));
         controller.stop(CONTAINER);
     }
 
@@ -376,6 +387,238 @@ public class BasicOneOffPatchingScenariosTestCase {
         Assert.assertTrue("The patch " + patchID + " should be listed as installed" ,
                 CliUtilsForPatching.getInstalledPatches().contains(patchID));
         Assert.assertFalse("File " + testFilePath + " should have been deleted", new File(testFilePath).exists());
+        controller.stop(CONTAINER);
+    }
+
+    /**
+     * Prepare a one-off patch which deletes multiple (2) misc files. Apply it, check that the file was removed.
+     * Roll it back, check that the file was restored and reapply patch
+     */
+    @Test
+    public void testOneOffPatchDeletingMultipleMiscFiles() throws Exception {
+        // prepare the patch
+        File tempDir = mkdir(new File(System.getProperty("java.io.tmpdir")), randomString());
+        String patchID = randomString();
+        File oneOffPatchDir = mkdir(tempDir, patchID);
+
+        final String testFilePath1 = AS_DISTRIBUTION + FILE_SEPARATOR + "README.txt";
+        final String testFilePath2 = AS_DISTRIBUTION + FILE_SEPARATOR + "LICENSE.txt";
+
+        // store original content
+        String originalContent1 = readFile(testFilePath1);
+        String originalContent2 = readFile(testFilePath2);
+
+        ContentModification miscFileRemoved1 = ContentModificationUtils.removeMisc(new File(testFilePath1), "");
+        ContentModification miscFileRemoved2 = ContentModificationUtils.removeMisc(new File(testFilePath2), "");
+        ProductConfig productConfig = new ProductConfig(PRODUCT, AS_VERSION, "main");
+        Patch oneOffPatch = PatchBuilder.create()
+                .setPatchId(patchID)
+                .setDescription("A one-off patch removing a misc file.")
+                .oneOffPatchIdentity(productConfig.getProductName(), productConfig.getProductVersion())
+                .getParent()
+                .addContentModification(miscFileRemoved1)
+                .addContentModification(miscFileRemoved2)
+                .build();
+        createPatchXMLFile(oneOffPatchDir, oneOffPatch);
+        File zippedPatch = createZippedPatchFile(oneOffPatchDir, patchID);
+
+        // apply the patch
+        controller.start(CONTAINER);
+        CliUtilsForPatching.applyPatch(zippedPatch.getAbsolutePath());
+        controller.stop(CONTAINER);
+
+        // check that patch is installed, files don't exist
+        controller.start(CONTAINER);
+        Assert.assertTrue("The patch " + patchID + " should be listed as installed" ,
+                CliUtilsForPatching.getInstalledPatches().contains(patchID));
+        Assert.assertFalse("File " + testFilePath1 + " should have been deleted", new File(testFilePath1).exists());
+        Assert.assertFalse("File " + testFilePath2 + " should have been deleted", new File(testFilePath2).exists());
+
+        // rollback the patch
+        CliUtilsForPatching.rollbackPatch(patchID);
+        controller.stop(CONTAINER);
+
+        // check that the patch is uninstalled and file is restored
+        controller.start(CONTAINER);
+        Assert.assertFalse("The patch " + patchID + " NOT should be listed as installed" ,
+                CliUtilsForPatching.getInstalledPatches().contains(patchID));
+        Assert.assertTrue("File + " + testFilePath1 + " should be restored", new File(testFilePath1).exists());
+        Assert.assertTrue("File + " + testFilePath2 + " should be restored", new File(testFilePath2).exists());
+        Assert.assertEquals("Unexpected contents of misc file", originalContent1, readFile(testFilePath1));
+        Assert.assertEquals("Unexpected contents of misc file", originalContent2, readFile(testFilePath2));
+
+        // reapply patch
+        CliUtilsForPatching.applyPatch(zippedPatch.getAbsolutePath());
+        controller.stop(CONTAINER);
+
+        // check that patch is installed, file doesn't exist
+        controller.start(CONTAINER);
+        Assert.assertTrue("The patch " + patchID + " should be listed as installed" ,
+                CliUtilsForPatching.getInstalledPatches().contains(patchID));
+        Assert.assertFalse("File " + testFilePath1 + " should have been deleted", new File(testFilePath1).exists());
+        Assert.assertFalse("File " + testFilePath2 + " should have been deleted", new File(testFilePath2).exists());
+        controller.stop(CONTAINER);
+    }
+
+    /**
+     * Prepare a one-off patch which adds misc file and deletes another misc file. Apply it, check that the files was created a deleted.
+     * Roll it back, check that the files was deleted, created and apply it again to make sure re-applying works as expected
+     */
+    @Test
+    public void testOneOffPatchAddingAMiscFileDeletingAnotherMiscFile() throws Exception {
+        // prepare the patch
+        File tempDir = mkdir(new File(System.getProperty("java.io.tmpdir")), randomString());
+        String patchID = randomString();
+        File oneOffPatchDir = mkdir(tempDir, patchID);
+
+        final String[] testFileSegmentsAdded =  new String[] {"testDir1", "testFile1.txt"};
+        final String testFilePathAdded = AS_DISTRIBUTION + FILE_SEPARATOR+ Joiner.on(FILE_SEPARATOR).join(testFileSegmentsAdded);
+        final String testContentAdded = "test content1";
+
+        final String testFilePathDeleted = AS_DISTRIBUTION + FILE_SEPARATOR + "LICENSE.txt";
+
+        final String originalContentOfDeletedFile = readFile(testFilePathDeleted);
+
+        ContentModification miscFileAdded = ContentModificationUtils.addMisc(oneOffPatchDir, patchID,
+                testContentAdded, testFileSegmentsAdded);
+        ContentModification miscFileDeleted = ContentModificationUtils.removeMisc(new File(testFilePathDeleted), "");
+        ProductConfig productConfig = new ProductConfig(PRODUCT, AS_VERSION, "main");
+        Patch oneOffPatch = PatchBuilder.create()
+                .setPatchId(patchID)
+                .setDescription("A one-off patch adding one misc file and deleting another misc file.")
+                .oneOffPatchIdentity(productConfig.getProductName(), productConfig.getProductVersion())
+                .getParent()
+                .addContentModification(miscFileAdded)
+                .addContentModification(miscFileDeleted)
+                .build();
+        createPatchXMLFile(oneOffPatchDir, oneOffPatch);
+        File zippedPatch = createZippedPatchFile(oneOffPatchDir, patchID);
+
+        // apply the patch
+        controller.start(CONTAINER);
+        CliUtilsForPatching.applyPatch(zippedPatch.getAbsolutePath());
+        controller.stop(CONTAINER);
+
+        // check if patch is installed, if files are created, deleted and check content
+        controller.start(CONTAINER);
+        Assert.assertTrue("The patch " + patchID + " should be listed as installed", CliUtilsForPatching.getInstalledPatches().contains(patchID));
+        Assert.assertTrue("File1 " + testFilePathAdded + " should exist", new File(testFilePathAdded).exists());
+        Assert.assertFalse("File2 " + testFilePathDeleted + " should have been deleted", new File(testFilePathDeleted).exists());
+        Assert.assertEquals("check content of file after applying patch", testContentAdded, readFile(testFilePathAdded));
+
+        // rollback the patch
+        CliUtilsForPatching.rollbackPatch(patchID);
+        controller.stop(CONTAINER);
+
+        // check if patch is uninstalled
+        controller.start(CONTAINER);
+        Assert.assertFalse("The patch " + patchID + " NOT should be listed as installed" ,
+                CliUtilsForPatching.getInstalledPatches().contains(patchID));
+        Assert.assertFalse("File1 + " + testFilePathAdded + " should have been deleted", new File(testFilePathAdded).exists());
+        Assert.assertTrue("File2 + " + testFilePathDeleted + " should exist", new File(testFilePathDeleted).exists());
+        Assert.assertEquals("check content of file after patch rollback", originalContentOfDeletedFile, readFile(testFilePathDeleted));
+
+        // reapply the patch
+        CliUtilsForPatching.applyPatch(zippedPatch.getAbsolutePath());
+        controller.stop(CONTAINER);
+
+        // check if patch is installed, if files exists and check content of files
+        controller.start(CONTAINER);
+        Assert.assertTrue("The patch " + patchID + " should be listed as installed", CliUtilsForPatching.getInstalledPatches().contains(patchID));
+        Assert.assertTrue("File1 " + testFilePathAdded + " should exist", new File(testFilePathAdded).exists());
+        Assert.assertFalse("File2 " + testFilePathDeleted + " should have been deleted", new File(testFilePathDeleted).exists());
+        Assert.assertEquals("check content of file after applying patch", testContentAdded, readFile(testFilePathAdded));
+        controller.stop(CONTAINER);
+    }
+
+    /**
+     * Prepare a one-off patch which adds multiple misc files and deletes multiple misc files. Apply it, check that the files was created a deleted.
+     * Roll it back, check that the files was deleted, created and apply it again to make sure re-applying works as expected
+     */
+    @Test
+    public void testOneOffPatchAddingMultipleMiscFilesDeletingMultipleMiscFiles() throws Exception {
+        // prepare the patch
+        File tempDir = mkdir(new File(System.getProperty("java.io.tmpdir")), randomString());
+        String patchID = randomString();
+        File oneOffPatchDir = mkdir(tempDir, patchID);
+
+        final String[] testFileSegmentsAdded1 =  new String[] {"testDir1", "testFile2.txt"};
+        final String testFilePathAdded1 = AS_DISTRIBUTION + FILE_SEPARATOR + Joiner.on(FILE_SEPARATOR).join(testFileSegmentsAdded1);
+        final String testContentAdded1 = "test content2";
+
+        final String[] testFileSegmentsAdded2 =  new String[] {"testFile2.txt"};
+        final String testFilePathAdded2 = AS_DISTRIBUTION + FILE_SEPARATOR + Joiner.on(FILE_SEPARATOR).join(testFileSegmentsAdded2);
+        final String testContentAdded2 = "test content2";
+
+        final String testFilePathDeleted1 = AS_DISTRIBUTION + FILE_SEPARATOR + "README.txt";
+        final String testFilePathDeleted2 = AS_DISTRIBUTION + FILE_SEPARATOR + "LICENSE.txt";
+
+        final String originalContentOfDeletedFile1 = readFile(testFilePathDeleted1);
+        final String originalContentOfDeletedFile2 = readFile(testFilePathDeleted2);
+
+        ContentModification miscFileAdded1 = ContentModificationUtils.addMisc(oneOffPatchDir, patchID,
+                testContentAdded1, testFileSegmentsAdded1);
+        ContentModification miscFileAdded2 = ContentModificationUtils.addMisc(oneOffPatchDir, patchID,
+                testContentAdded2, testFileSegmentsAdded2);
+        ContentModification miscFileDeleted1 = ContentModificationUtils.removeMisc(new File(testFilePathDeleted1), "");
+        ContentModification miscFileDeleted2 = ContentModificationUtils.removeMisc(new File(testFilePathDeleted2), "");
+        ProductConfig productConfig = new ProductConfig(PRODUCT, AS_VERSION, "main");
+        Patch oneOffPatch = PatchBuilder.create()
+                .setPatchId(patchID)
+                .setDescription("A one-off patch adding one misc file and deleting another misc file.")
+                .oneOffPatchIdentity(productConfig.getProductName(), productConfig.getProductVersion())
+                .getParent()
+                .addContentModification(miscFileAdded1)
+                .addContentModification(miscFileAdded2)
+                .addContentModification(miscFileDeleted1)
+                .addContentModification(miscFileDeleted2)
+                .build();
+        createPatchXMLFile(oneOffPatchDir, oneOffPatch);
+        File zippedPatch = createZippedPatchFile(oneOffPatchDir, patchID);
+
+        // apply the patch
+        controller.start(CONTAINER);
+        CliUtilsForPatching.applyPatch(zippedPatch.getAbsolutePath());
+        controller.stop(CONTAINER);
+
+        // check if patch is installed, if files are created, deleted and check content
+        controller.start(CONTAINER);
+        Assert.assertTrue("The patch " + patchID + " should be listed as installed", CliUtilsForPatching.getInstalledPatches().contains(patchID));
+        Assert.assertTrue("File1 " + testFilePathAdded1 + " should exist", new File(testFilePathAdded1).exists());
+        Assert.assertTrue("File2 " + testFilePathAdded2 + " should exist", new File(testFilePathAdded2).exists());
+        Assert.assertFalse("File3 " + testFilePathDeleted1 + " should have been deleted", new File(testFilePathDeleted1).exists());
+        Assert.assertFalse("File4 " + testFilePathDeleted2 + " should have been deleted", new File(testFilePathDeleted2).exists());
+        Assert.assertEquals("check content of file after applying patch", testContentAdded1, readFile(testFilePathAdded1));
+        Assert.assertEquals("check content of file after applying patch", testContentAdded2, readFile(testFilePathAdded2));
+
+        // rollback the patch
+        CliUtilsForPatching.rollbackPatch(patchID);
+        controller.stop(CONTAINER);
+
+        // check if patch is uninstalled
+        controller.start(CONTAINER);
+        Assert.assertFalse("The patch " + patchID + " NOT should be listed as installed" ,
+                CliUtilsForPatching.getInstalledPatches().contains(patchID));
+        Assert.assertFalse("File1 + " + testFilePathAdded1 + " should have been deleted", new File(testFilePathAdded1).exists());
+        Assert.assertFalse("File2 + " + testFilePathAdded2 + " should have been deleted", new File(testFilePathAdded2).exists());
+        Assert.assertTrue("File3 + " + testFilePathDeleted1 + " should exist", new File(testFilePathDeleted1).exists());
+        Assert.assertTrue("File4 + " + testFilePathDeleted2 + " should exist", new File(testFilePathDeleted2).exists());
+        Assert.assertEquals("check content of file after patch rollback", originalContentOfDeletedFile1, readFile(testFilePathDeleted1));
+        Assert.assertEquals("check content of file after patch rollback", originalContentOfDeletedFile2, readFile(testFilePathDeleted2));
+
+        // reapply the patch
+        CliUtilsForPatching.applyPatch(zippedPatch.getAbsolutePath());
+        controller.stop(CONTAINER);
+
+        // check if patch is installed, if files exists and check content of files
+        controller.start(CONTAINER);
+        Assert.assertTrue("The patch " + patchID + " should be listed as installed", CliUtilsForPatching.getInstalledPatches().contains(patchID));
+        Assert.assertTrue("File1 " + testFilePathAdded1 + " should exist", new File(testFilePathAdded1).exists());
+        Assert.assertTrue("File2 " + testFilePathAdded2 + " should exist", new File(testFilePathAdded2).exists());
+        Assert.assertFalse("File3 " + testFilePathDeleted1 + " should have been deleted", new File(testFilePathDeleted1).exists());
+        Assert.assertFalse("File4 " + testFilePathDeleted2 + " should have been deleted", new File(testFilePathDeleted2).exists());
+        Assert.assertEquals("check content of file after applying patch", testContentAdded1, readFile(testFilePathAdded1));
+        Assert.assertEquals("check content of file after applying patch", testContentAdded2, readFile(testFilePathAdded2));
         controller.stop(CONTAINER);
     }
 
