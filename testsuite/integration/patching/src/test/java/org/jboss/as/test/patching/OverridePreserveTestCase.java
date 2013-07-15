@@ -21,8 +21,6 @@
 
 package org.jboss.as.test.patching;
 
-import java.io.File;
-
 import org.jboss.arquillian.container.test.api.ContainerController;
 import org.jboss.arquillian.container.test.api.RunAsClient;
 import org.jboss.arquillian.junit.Arquillian;
@@ -36,11 +34,10 @@ import org.junit.Assert;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
+import java.io.File;
+
 import static org.jboss.as.patching.IoUtils.mkdir;
-import static org.jboss.as.test.patching.PatchingTestUtil.AS_VERSION;
-import static org.jboss.as.test.patching.PatchingTestUtil.CONTAINER;
-import static org.jboss.as.test.patching.PatchingTestUtil.PRODUCT;
-import static org.jboss.as.test.patching.PatchingTestUtil.randomString;
+import static org.jboss.as.test.patching.PatchingTestUtil.*;
 
 /**
  * @author Jan Martiska
@@ -53,9 +50,10 @@ public class OverridePreserveTestCase {
     private ContainerController controller;
 
     @After
-    public void cleanup() {
+    public void cleanup() throws Exception {
         if(controller.isStarted(CONTAINER))
             controller.stop(CONTAINER);
+        CliUtilsForPatching.rollbackAll();
     }
 
     /**

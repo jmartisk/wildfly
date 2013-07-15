@@ -21,13 +21,13 @@
 
 package org.jboss.as.test.patching;
 
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.List;
-
 import org.jboss.as.controller.client.helpers.ClientConstants;
 import org.jboss.as.test.integration.management.util.CLIWrapper;
 import org.jboss.dmr.ModelNode;
+
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.List;
 
 /**
  * @author Jan Martiska
@@ -194,5 +194,35 @@ public class CliUtilsForPatching {
             }
         }
     }
+
+    /**
+     * Rollback all installed patched
+     * @return true if operation was successful or false if at least one rollback failed
+     * @throws Exception
+     */
+    public static boolean rollbackAll() throws Exception {
+        CLIWrapper cli = null;
+        boolean success = true;
+        final String infoCommand = "patch info --distribution=%s";
+        final String rollbackCommand = "patch rollback --patch-id=%s --distribution=%s";
+        try {
+            cli = new CLIWrapper(false);
+            cli.sendLine(String.format(infoCommand, PatchingTestUtil.AS_DISTRIBUTION));
+            String response = cli.readOutput();
+            ModelNode responseNode = ModelNode.fromJSONString(response);
+            List<ModelNode> patchesList = responseNode.get("result").get("patches").asList();
+            List<String> patchesListString = new ArrayList<String>();
+            for (ModelNode n : patchesList) {
+                success = success && cli.sendLine(String.format(rollbackCommand, n.asString(), PatchingTestUtil.AS_DISTRIBUTION), true);
+            }
+            return success;
+        } finally {
+            if (cli != null) {
+                cli.quit();
+            }
+        }
+    }
+
+
 
 }
