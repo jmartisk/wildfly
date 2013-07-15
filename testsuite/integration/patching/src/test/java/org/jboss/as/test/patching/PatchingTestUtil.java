@@ -21,21 +21,17 @@
 
 package org.jboss.as.test.patching;
 
-import java.io.File;
-import java.io.FileNotFoundException;
-import java.io.FileOutputStream;
-import java.io.IOException;
-import java.io.OutputStream;
-import java.nio.charset.Charset;
-import java.util.Scanner;
-import java.util.UUID;
-
 import org.jboss.as.patching.IoUtils;
 import org.jboss.as.patching.ZipUtils;
 import org.jboss.as.patching.metadata.ModuleItem;
 import org.jboss.as.patching.metadata.Patch;
 import org.jboss.as.patching.metadata.PatchXml;
 import org.junit.Assert;
+
+import java.io.*;
+import java.nio.charset.Charset;
+import java.util.Scanner;
+import java.util.UUID;
 
 import static java.lang.String.format;
 import static org.jboss.as.patching.IoUtils.safeClose;
@@ -50,6 +46,7 @@ public class PatchingTestUtil {
     public static final String AS_DISTRIBUTION = System.getProperty("jbossas.dist");
     public static final String AS_VERSION = System.getProperty("jbossas.version");
     public static final String PRODUCT = "WildFly";
+    public static final String FILE_SEPARATOR = File.separator;
 
     public static String randomString() {
         return UUID.randomUUID().toString();
