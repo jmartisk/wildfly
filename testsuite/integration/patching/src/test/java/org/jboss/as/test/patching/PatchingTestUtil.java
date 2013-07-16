@@ -21,6 +21,7 @@
 
 package org.jboss.as.test.patching;
 
+import com.google.common.base.Joiner;
 import org.jboss.as.patching.IoUtils;
 import org.jboss.as.patching.ZipUtils;
 import org.jboss.as.patching.metadata.ModuleItem;
@@ -47,6 +48,8 @@ public class PatchingTestUtil {
     public static final String AS_VERSION = System.getProperty("jbossas.version");
     public static final String PRODUCT = "WildFly";
     public static final String FILE_SEPARATOR = File.separator;
+    private static final String RELATIVE_PATCHES_PATH = Joiner.on(FILE_SEPARATOR).join(new String[] {"modules", "system", "layers", "base", "patches"});
+    public static final String PATCHES_PATH = AS_DISTRIBUTION + FILE_SEPARATOR + RELATIVE_PATCHES_PATH;
 
     public static String randomString() {
         return UUID.randomUUID().toString();
@@ -127,6 +130,16 @@ public class PatchingTestUtil {
         }
     }
 
+    public static void dump(File f, byte[] content) throws IOException {
+        final OutputStream os = new FileOutputStream(f);
+        try {
+            os.write(content);
+            os.close();
+        } finally {
+            IoUtils.safeClose(os);
+        }
+    }
+
     public static File createModuleXmlFile(File mainDir, String moduleName, String... resources)
             throws IOException {
         StringBuilder content = new StringBuilder("<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n");
@@ -162,17 +175,15 @@ public class PatchingTestUtil {
         return moduleDir;
     }
 
-    public static File createModule0(File baseDir, String moduleName, String... resourcesContents)
+    public static File createModule0(File baseDir, String moduleName, ResourceItem... resourcesItems)
             throws IOException {
         File mainDir = createModuleRoot(baseDir, moduleName);
-        String resourceFilePrefix = randomString();
-        String[] resourceFileNames = new String[resourcesContents.length];
-        for (int i = 0; i < resourcesContents.length; i++) {
-            String content = resourcesContents[i];
-            String fileName = resourceFilePrefix + "-" + i;
-            resourceFileNames[i] = fileName;
-            File f = touch(mainDir, fileName);
-            dump(f, content);
+        String[] resourceFileNames = new String[resourcesItems.length];
+        for (int i = 0; i < resourcesItems.length; i++) {
+            ResourceItem item = resourcesItems[i];
+            resourceFileNames[i] = item.getItemName();
+            File f = touch(mainDir, item.getItemName());
+            dump(f, item.getContent());
         }
         createModuleXmlFile(mainDir, moduleName, resourceFileNames);
         return mainDir.getParentFile();
@@ -227,5 +238,7 @@ public class PatchingTestUtil {
         ZipUtils.zip(sourceDir, zipFile);
         return zipFile;
     }
+
+
 
 }
