@@ -21,36 +21,29 @@
 
 package org.jboss.as.test.patching;
 
-import java.io.File;
-import java.io.IOException;
-
 import org.jboss.as.patching.metadata.BundleItem;
 import org.jboss.as.patching.metadata.ContentModification;
 import org.jboss.as.patching.metadata.MiscContentItem;
 import org.jboss.as.patching.metadata.ModuleItem;
 
-import static org.jboss.as.patching.Constants.BUNDLES;
-import static org.jboss.as.patching.Constants.MISC;
-import static org.jboss.as.patching.Constants.MODULES;
+import java.io.File;
+import java.io.IOException;
+
+import static org.jboss.as.patching.Constants.*;
 import static org.jboss.as.patching.HashUtils.hashFile;
 import static org.jboss.as.patching.IoUtils.NO_CONTENT;
 import static org.jboss.as.patching.IoUtils.newFile;
-import static org.jboss.as.patching.metadata.ModificationType.ADD;
-import static org.jboss.as.patching.metadata.ModificationType.MODIFY;
-import static org.jboss.as.patching.metadata.ModificationType.REMOVE;
-import static org.jboss.as.test.patching.PatchingTestUtil.createBundle0;
-import static org.jboss.as.test.patching.PatchingTestUtil.createModule0;
-import static org.jboss.as.test.patching.PatchingTestUtil.dump;
-import static org.jboss.as.test.patching.PatchingTestUtil.randomString;
-import static org.jboss.as.test.patching.PatchingTestUtil.touch;
+import static org.jboss.as.patching.metadata.ModificationType.*;
+import static org.jboss.as.test.patching.PatchingTestUtil.*;
 
 /**
  * @author <a href="http://jmesnil.net/">Jeff Mesnil</a> (c) 2013 Red Hat inc.
  */
 public class ContentModificationUtils {
-    public static ContentModification addModule(File patchDir, String patchElementID, String moduleName, String... resourceContents) throws IOException {
+
+    public static ContentModification addModule(File patchDir, String patchElementID, String moduleName, ResourceItem... resourceItems) throws IOException {
         File modulesDir = newFile(patchDir, patchElementID, MODULES);
-        File moduleDir = createModule0(modulesDir, moduleName, resourceContents);
+        File moduleDir = createModule0(modulesDir, moduleName, resourceItems);
         byte[] newHash = hashFile(moduleDir);
         ContentModification moduleAdded = new ContentModification(new ModuleItem(moduleName, ModuleItem.MAIN_SLOT, newHash), NO_CONTENT, ADD);
         return moduleAdded;
@@ -69,14 +62,14 @@ public class ContentModificationUtils {
         return new ContentModification(new ModuleItem(existingModule.getName(), ModuleItem.MAIN_SLOT, NO_CONTENT), existingHash, REMOVE);
     }
 
-    public static ContentModification modifyModule(File patchDir, String patchElementID, File existingModule, String newContent) throws IOException {
+    public static ContentModification modifyModule(File patchDir, String patchElementID, File existingModule, ResourceItem resourceItem) throws IOException {
         byte[] existingHash = hashFile(existingModule);
-        return modifyModule(patchDir, patchElementID, existingModule.getName(), existingHash, newContent);
+        return modifyModule(patchDir, patchElementID, existingModule.getName(), existingHash, resourceItem);
     }
 
-    public static ContentModification modifyModule(File patchDir, String patchElementID, String moduleName, byte[] existingHash, String newContent) throws IOException {
+    public static ContentModification modifyModule(File patchDir, String patchElementID, String moduleName, byte[] existingHash, ResourceItem resourceItem) throws IOException {
         File modulesDir = newFile(patchDir, patchElementID, MODULES);
-        File modifiedModule = createModule0(modulesDir, moduleName, newContent);
+        File modifiedModule = createModule0(modulesDir, moduleName, resourceItem);
         byte[] updatedHash = hashFile(modifiedModule);
         ContentModification moduleUpdated = new ContentModification(new ModuleItem(moduleName, ModuleItem.MAIN_SLOT, updatedHash), existingHash, MODIFY);
         return moduleUpdated;
