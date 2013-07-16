@@ -54,7 +54,7 @@ public class BasicOneOffPatchingScenariosTestCase {
     public void cleanup() throws Exception {
         if(controller.isStarted(CONTAINER))
             controller.stop(CONTAINER);
-        CliUtilsForPatching.rollbackAll();
+        //CliUtilsForPatching.rollbackAll();
     }
 
     /**
@@ -623,7 +623,8 @@ public class BasicOneOffPatchingScenariosTestCase {
     }
 
     /**
-     * adds a new module "org.wildfly.awesomemodule" to the base layer
+     * Prepare a one-off patch which adds a new module "org.wildfly.awesomemodule" to the base layer. Apply it, check that the module was installed
+     * Roll it back, check that the files was deleted, created and apply it again to make sure re-applying works as expected
      * @throws Exception
      */
     @Test
@@ -633,7 +634,14 @@ public class BasicOneOffPatchingScenariosTestCase {
         String patchID = randomString();
         String layerPatchID  = randomString();
         File oneOffPatchDir = mkdir(tempDir, patchID);
-        ContentModification moduleAdded = ContentModificationUtils.addModule(oneOffPatchDir, layerPatchID, "org.wildfly.awesomemodule", "content1", "content2");
+
+        final String moduleName =  "org.wildfly.awesomemodule";
+        final String modulePath = PATCHES_PATH + FILE_SEPARATOR + layerPatchID + FILE_SEPARATOR + moduleName.replace(".", FILE_SEPARATOR) + FILE_SEPARATOR + "main";
+
+        final ResourceItem resourceItem1 = new ResourceItem("testFile1", "content1".getBytes());
+        final ResourceItem resourceItem2 = new ResourceItem("testFile2", "content2".getBytes());
+
+        ContentModification moduleAdded = ContentModificationUtils.addModule(oneOffPatchDir, layerPatchID, moduleName, resourceItem1, resourceItem2);
         ProductConfig productConfig = new ProductConfig(PRODUCT, AS_VERSION, "main");
         Patch oneOffPatch = PatchBuilder.create()
             .setPatchId(patchID)
@@ -648,47 +656,72 @@ public class BasicOneOffPatchingScenariosTestCase {
         createPatchXMLFile(oneOffPatchDir, oneOffPatch);
         File zippedPatch = createZippedPatchFile(oneOffPatchDir, patchID);
 
-        // apply the patch
+        // apply the patch and check if server is in restart-required mode
         controller.start(CONTAINER);
         CliUtilsForPatching.applyPatch(zippedPatch.getAbsolutePath());
         Assert.assertTrue("server should be in restart-required mode",
                 CliUtilsForPatching.doesServerRequireRestart());
         controller.stop(CONTAINER);
-        controller.start(CONTAINER);
 
+        // check if patch is listed as installed, files exists on correct place
+        controller.start(CONTAINER);
         // TODO more checks that the module exists
+        Assert.assertTrue("The file " + resourceItem1.getItemName() + " should exist", new File(modulePath + FILE_SEPARATOR + resourceItem1.getItemName()).exists());
+        Assert.assertTrue("The file " + resourceItem2.getItemName() + " should exist", new File(modulePath + FILE_SEPARATOR + resourceItem2.getItemName()).exists());
         Assert.assertTrue("The patch " + patchID + " should be listed as installed",
                 CliUtilsForPatching.getInstalledPatches().contains(patchID));
 
 
-        controller.stop(CONTAINER);
-        controller.start(CONTAINER);
-
-        // rollback the patch
+        // rollback the patch and check if server is in restart-required mode
         CliUtilsForPatching.rollbackPatch(patchID);
+        Assert.assertTrue("server should be in restart-required mode",
+                CliUtilsForPatching.doesServerRequireRestart());
         controller.stop(CONTAINER);
-        controller.start(CONTAINER);
 
+        // check if patch is not listed
+        controller.start(CONTAINER);
         // TODO mode checks that the module does not exist anymore
+        Assert.assertFalse("The file " + resourceItem1.getItemName() + "should have been deleted", new File(modulePath + FILE_SEPARATOR + resourceItem1.getItemName()).exists());
+        Assert.assertFalse("The file " + resourceItem2.getItemName() + "should have been deleted", new File(modulePath + FILE_SEPARATOR + resourceItem2.getItemName()).exists());
         Assert.assertFalse("The patch " + patchID + " NOT should be listed as installed" ,
                 CliUtilsForPatching.getInstalledPatches().contains(patchID));
 
+        // reapply patch and check if server is in restart-required mode
+        CliUtilsForPatching.applyPatch(zippedPatch.getAbsolutePath());
+        Assert.assertTrue("server should be in restart-required mode",
+                CliUtilsForPatching.doesServerRequireRestart());
+        controller.stop(CONTAINER);
+
+
+        controller.start(CONTAINER);
+        // check if patch is listed as installed, files exists on correct place
+        controller.start(CONTAINER);
+        // TODO more checks that the module exists
+        Assert.assertTrue("The file " + resourceItem1.getItemName() + " should exist", new File(modulePath + FILE_SEPARATOR + resourceItem1.getItemName()).exists());
+        Assert.assertTrue("The file " + resourceItem2.getItemName() + " should exist", new File(modulePath + FILE_SEPARATOR + resourceItem2.getItemName()).exists());
+        Assert.assertTrue("The patch " + patchID + " should be listed as installed",
+                CliUtilsForPatching.getInstalledPatches().contains(patchID));
         controller.stop(CONTAINER);
     }
 
     /**
-     * adds a new module "org.wildfly.awesomemodule" to the base layer
-     * rollback it and apply the same patch again to make sure re-applying works as expected
+     * Prepare a one-off patch which adds multiple (2) modules "org.wildfly.awesomemodule(#)" to the base layer. Apply it, check that the modules were installed
+     * Roll it back, check that the modules were uninstalled  and apply it again to make sure re-applying works as expected
      * @throws Exception
      */
     @Test
-    public void testOneOffPatchAddingAModuleRepeatedly() throws Exception {
+    public void testOneOffPatchAddingMultipleModules() throws Exception {
         // prepare the patch
         File tempDir = mkdir(new File(System.getProperty("java.io.tmpdir")), randomString());
         String patchID = randomString();
         String layerPatchID  = randomString();
         File oneOffPatchDir = mkdir(tempDir, patchID);
-        ContentModification moduleAdded = ContentModificationUtils.addModule(oneOffPatchDir, layerPatchID, "org.wildfly.awesomemodule", "content1", "content2");
+
+        final ResourceItem resourceItem1 = new ResourceItem("testFile1", "content1".getBytes());
+        final ResourceItem resourceItem2 = new ResourceItem("testFile2", "content2".getBytes());
+
+        ContentModification moduleAdded1 = ContentModificationUtils.addModule(oneOffPatchDir, layerPatchID, "org.wildfly.awesomemodule1", resourceItem1, resourceItem2);
+        ContentModification moduleAdded2 = ContentModificationUtils.addModule(oneOffPatchDir, layerPatchID, "org.wildfly.awesomemodule2", resourceItem1, resourceItem2);
         ProductConfig productConfig = new ProductConfig(PRODUCT, AS_VERSION, "main");
         Patch oneOffPatch = PatchBuilder.create()
                 .setPatchId(patchID)
@@ -697,27 +730,52 @@ public class BasicOneOffPatchingScenariosTestCase {
                 .getParent()
                 .oneOffPatchElement(layerPatchID, "base", false)
                 .setDescription("New module for the base layer")
-                .addContentModification(moduleAdded)
+                .addContentModification(moduleAdded1)
+                .addContentModification(moduleAdded2)
                 .getParent()
                 .build();
         createPatchXMLFile(oneOffPatchDir, oneOffPatch);
         File zippedPatch = createZippedPatchFile(oneOffPatchDir, patchID);
 
-        // apply the patch, roll it back, then apply again
+        // apply the patch and check if server is in restart-required mode
         controller.start(CONTAINER);
         CliUtilsForPatching.applyPatch(zippedPatch.getAbsolutePath());
+        Assert.assertTrue("server should be in restart-required mode",
+                CliUtilsForPatching.doesServerRequireRestart());
         controller.stop(CONTAINER);
+
+        // check if patch is listed as installed, files exists on correct place
         controller.start(CONTAINER);
-        CliUtilsForPatching.rollbackPatch(patchID);
-        controller.stop(CONTAINER);
-        controller.start(CONTAINER);
-        CliUtilsForPatching.applyPatch(zippedPatch.getAbsolutePath());
-        controller.stop(CONTAINER);
-        controller.start(CONTAINER);
-        Assert.assertTrue("The patch " + patchID + " should be listed as installed" ,
+        // TODO more checks that the module exists
+        Assert.assertTrue("The patch " + patchID + " should be listed as installed",
                 CliUtilsForPatching.getInstalledPatches().contains(patchID));
-        // and finally roll it back to clean up
+
+
+        // rollback the patch and check if server is in restart-required mode
         CliUtilsForPatching.rollbackPatch(patchID);
+        Assert.assertTrue("server should be in restart-required mode",
+                CliUtilsForPatching.doesServerRequireRestart());
+        controller.stop(CONTAINER);
+
+        // check if patch is not listed
+        controller.start(CONTAINER);
+        // TODO mode checks that the module does not exist anymore
+        Assert.assertFalse("The patch " + patchID + " NOT should be listed as installed" ,
+                CliUtilsForPatching.getInstalledPatches().contains(patchID));
+
+        // reapply patch and check if server is in restart-required mode
+        CliUtilsForPatching.applyPatch(zippedPatch.getAbsolutePath());
+        Assert.assertTrue("server should be in restart-required mode",
+                CliUtilsForPatching.doesServerRequireRestart());
+        controller.stop(CONTAINER);
+
+
+        controller.start(CONTAINER);
+        // check if patch is listed as installed, files exists on correct place
+        controller.start(CONTAINER);
+        // TODO more checks that the module exists
+        Assert.assertTrue("The patch " + patchID + " should be listed as installed",
+                CliUtilsForPatching.getInstalledPatches().contains(patchID));
         controller.stop(CONTAINER);
     }
 
