@@ -89,9 +89,6 @@ public class OverridePreserveTestCase {
         ContentModification file1Modified = ContentModificationUtils.modifyMisc(oneOffPatchDir, patchID, file1patchedContent, new File(file1), "README.txt");
         ContentModification file2Modified = ContentModificationUtils.modifyMisc(oneOffPatchDir, patchID, file2patchedContent, new File(file2), "LICENSE.txt");
 
-        PatchingTestUtil.setFileContent(file1, file1modifiedContent);
-        PatchingTestUtil.setFileContent(file2, file2modifiedContent);
-
         ProductConfig productConfig = new ProductConfig(PRODUCT, AS_VERSION, "main");
         Patch oneOffPatch = PatchBuilder.create()
                 .setPatchId(patchID)
@@ -104,54 +101,88 @@ public class OverridePreserveTestCase {
         PatchingTestUtil.createPatchXMLFile(oneOffPatchDir, oneOffPatch);
         File zippedPatch = PatchingTestUtil.createZippedPatchFile(oneOffPatchDir, patchID);
 
-        // apply the patch
+        // modify files
+        PatchingTestUtil.setFileContent(file1, file1modifiedContent);
+        PatchingTestUtil.setFileContent(file2, file2modifiedContent);
+
+        // apply the patch without override/preserve
         controller.start(CONTAINER);
         Assert.assertFalse("Server should reject patch installation in this case",
                 CliUtilsForPatching.applyPatch(zippedPatch.getAbsolutePath()));
         Assert.assertEquals("Misc file should not be overwritten", file1modifiedContent, PatchingTestUtil.readFile(file1));
         Assert.assertEquals("Misc file should not be overwritten", file2modifiedContent, PatchingTestUtil.readFile(file2));
 
+        // apply patch with --override-all
         Assert.assertTrue("Patch should be accepted",
                 CliUtilsForPatching.applyPatch(zippedPatch.getAbsolutePath(), CliUtilsForPatching.OVERRIDE_ALL));
+        Assert.assertTrue("server should be in restart-required mode", CliUtilsForPatching.doesServerRequireRestart());
+        controller.stop(CONTAINER);
 
+        controller.start(CONTAINER);
+        Assert.assertTrue("The patch " + patchID + " should be listed as installed", CliUtilsForPatching.getInstalledPatches().contains(patchID));
         Assert.assertEquals("Misc file should be overwritten", file1patchedContent, PatchingTestUtil.readFile(file1));
         Assert.assertEquals("Misc file should be overwritten", file2patchedContent, PatchingTestUtil.readFile(file2));
 
-        // roll it back
-        controller.stop(CONTAINER);
-        controller.start(CONTAINER);
+        // modify README.txt
+        PatchingTestUtil.setFileContent(file1, file1modifiedContent);
 
+        // rollback patch with --override=README.txt and --preserve=LICENSE.txt
         Assert.assertTrue("Rollback should be accepted",
                 CliUtilsForPatching.rollbackPatch(patchID, String.format(CliUtilsForPatching.PRESERVE, "LICENSE.txt"),
                         String.format(CliUtilsForPatching.OVERRIDE, "README.txt")));
+        Assert.assertTrue("server should be in restart-required mode", CliUtilsForPatching.doesServerRequireRestart());
         controller.stop(CONTAINER);
 
+        controller.start(CONTAINER);
+        Assert.assertFalse("The patch " + patchID + " NOT should be listed as installed", CliUtilsForPatching.getInstalledPatches().contains(patchID));
         Assert.assertEquals("README.txt should be reverted", file1modifiedContent, PatchingTestUtil.readFile(file1));
         Assert.assertEquals("LICENSE.txt should NOT be reverted", file2patchedContent, PatchingTestUtil.readFile(file2));
 
+        // modify files
         PatchingTestUtil.setFileContent(file1, file1modifiedContent);
         PatchingTestUtil.setFileContent(file2, file2modifiedContent);
-
-        controller.start(CONTAINER);
 
         // apply it with --override=LICENSE.txt --preserve=README.txt
         Assert.assertTrue("Patch should be accepted",
                 CliUtilsForPatching.applyPatch(zippedPatch.getAbsolutePath(),
                         String.format(CliUtilsForPatching.OVERRIDE, "LICENSE.txt"),
                         String.format(CliUtilsForPatching.PRESERVE, "README.txt")));
+        Assert.assertTrue("server should be in restart-required mode", CliUtilsForPatching.doesServerRequireRestart());
+        controller.stop(CONTAINER);
 
+        controller.start(CONTAINER);
+        Assert.assertTrue("The patch " + patchID + " should be listed as installed", CliUtilsForPatching.getInstalledPatches().contains(patchID));
         Assert.assertEquals("README.txt should NOT be overwritten", file1modifiedContent, PatchingTestUtil.readFile(file1));
         Assert.assertEquals("LICENSE.txt should be overwritten", file2patchedContent, PatchingTestUtil.readFile(file2));
 
-        // rollback again
+        // rollback
+        Assert.assertTrue("Rollback should be accepted", CliUtilsForPatching.rollbackPatch(patchID, String.format(CliUtilsForPatching.OVERRIDE, "LICENSE.txt")));
+        Assert.assertTrue("server should be in restart-required mode", CliUtilsForPatching.doesServerRequireRestart());
         controller.stop(CONTAINER);
+
         controller.start(CONTAINER);
-
-        Assert.assertTrue("Rollback should be accepted",
-                CliUtilsForPatching.rollbackPatch(patchID, String.format(CliUtilsForPatching.OVERRIDE, "LICENSE.txt")));
-
+        Assert.assertFalse("The patch " + patchID + " NOT should be listed as installed", CliUtilsForPatching.getInstalledPatches().contains(patchID));
+        Assert.assertEquals("README.txt should NOT be changed", file1modifiedContent, PatchingTestUtil.readFile(file1));
         Assert.assertEquals("LICENSE.txt should be rolled back", file2modifiedContent, PatchingTestUtil.readFile(file2));
+
+        // modify files
+        PatchingTestUtil.setFileContent(file1, file1modifiedContent);
+        PatchingTestUtil.setFileContent(file2, file2modifiedContent);
+
+        // apply it with --preserve=LICENSE.txt,README.txt
+        Assert.assertTrue("Patch should be accepted",
+                CliUtilsForPatching.applyPatch(zippedPatch.getAbsolutePath(),
+                        String.format(CliUtilsForPatching.PRESERVE, "README.txt,LICENSE.txt")));
+        Assert.assertTrue("server should be in restart-required mode", CliUtilsForPatching.doesServerRequireRestart());
         controller.stop(CONTAINER);
+
+        controller.start(CONTAINER);
+        Assert.assertTrue("The patch " + patchID + " should be listed as installed", CliUtilsForPatching.getInstalledPatches().contains(patchID));
+        Assert.assertEquals("README.txt should NOT be changed", file1modifiedContent, PatchingTestUtil.readFile(file1));
+        Assert.assertEquals("LICENSE.txt should NOT be changed", file2modifiedContent, PatchingTestUtil.readFile(file2));
+        controller.stop(CONTAINER);
+
+        //final rollback is performed by @After
 
         // clean up
         PatchingTestUtil.setFileContent(file1, file1originalContent);
