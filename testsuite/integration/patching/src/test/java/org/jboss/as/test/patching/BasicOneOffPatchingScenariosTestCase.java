@@ -21,10 +21,7 @@
 
 package org.jboss.as.test.patching;
 
-import java.io.File;
-
 import com.google.common.base.Joiner;
-
 import org.jboss.arquillian.container.test.api.ContainerController;
 import org.jboss.arquillian.container.test.api.RunAsClient;
 import org.jboss.arquillian.junit.Arquillian;
@@ -38,22 +35,12 @@ import org.junit.Assert;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
-import static org.jboss.as.patching.Constants.BASE;
-import static org.jboss.as.patching.Constants.LAYERS;
-import static org.jboss.as.patching.Constants.SYSTEM;
+import java.io.File;
+
+import static org.jboss.as.patching.Constants.*;
 import static org.jboss.as.patching.IoUtils.mkdir;
 import static org.jboss.as.patching.IoUtils.newFile;
-import static org.jboss.as.test.patching.PatchingTestUtil.AS_DISTRIBUTION;
-import static org.jboss.as.test.patching.PatchingTestUtil.AS_VERSION;
-import static org.jboss.as.test.patching.PatchingTestUtil.CONTAINER;
-import static org.jboss.as.test.patching.PatchingTestUtil.FILE_SEPARATOR;
-import static org.jboss.as.test.patching.PatchingTestUtil.PATCHES_PATH;
-import static org.jboss.as.test.patching.PatchingTestUtil.PRODUCT;
-import static org.jboss.as.test.patching.PatchingTestUtil.createModule0;
-import static org.jboss.as.test.patching.PatchingTestUtil.createPatchXMLFile;
-import static org.jboss.as.test.patching.PatchingTestUtil.createZippedPatchFile;
-import static org.jboss.as.test.patching.PatchingTestUtil.randomString;
-import static org.jboss.as.test.patching.PatchingTestUtil.readFile;
+import static org.jboss.as.test.patching.PatchingTestUtil.*;
 
 /**
  * @author Jan Martiska
@@ -333,7 +320,7 @@ public class BasicOneOffPatchingScenariosTestCase {
 
         //check content
         controller.start(CONTAINER);
-        Assert.assertFalse("The patch " + patchID + " NOT should be listed as installed" ,
+        Assert.assertFalse("The patch " + patchID + " NOT should be listed as installed",
                 CliUtilsForPatching.getInstalledPatches().contains(patchID));
         patchContent1 =  readFile(testFilePath1);
         Assert.assertEquals("check content of file after rollback1", originalContent1, patchContent1);
@@ -461,7 +448,7 @@ public class BasicOneOffPatchingScenariosTestCase {
 
         // check that patch is installed, files don't exist
         controller.start(CONTAINER);
-        Assert.assertTrue("The patch " + patchID + " should be listed as installed" ,
+        Assert.assertTrue("The patch " + patchID + " should be listed as installed",
                 CliUtilsForPatching.getInstalledPatches().contains(patchID));
         Assert.assertFalse("File " + testFilePath1 + " should have been deleted",
                 new File(testFilePath1).exists());
@@ -475,7 +462,7 @@ public class BasicOneOffPatchingScenariosTestCase {
 
         // check that the patch is uninstalled and file is restored
         controller.start(CONTAINER);
-        Assert.assertFalse("The patch " + patchID + " NOT should be listed as installed" ,
+        Assert.assertFalse("The patch " + patchID + " NOT should be listed as installed",
                 CliUtilsForPatching.getInstalledPatches().contains(patchID));
         Assert.assertTrue("File + " + testFilePath1 + " should be restored", new File(testFilePath1).exists());
         Assert.assertTrue("File + " + testFilePath2 + " should be restored", new File(testFilePath2).exists());
@@ -489,7 +476,7 @@ public class BasicOneOffPatchingScenariosTestCase {
 
         // check that patch is installed, file doesn't exist
         controller.start(CONTAINER);
-        Assert.assertTrue("The patch " + patchID + " should be listed as installed" ,
+        Assert.assertTrue("The patch " + patchID + " should be listed as installed",
                 CliUtilsForPatching.getInstalledPatches().contains(patchID));
         Assert.assertFalse("File " + testFilePath1 + " should have been deleted", new File(testFilePath1).exists());
         Assert.assertFalse("File " + testFilePath2 + " should have been deleted",
@@ -974,7 +961,7 @@ public class BasicOneOffPatchingScenariosTestCase {
         // check if patch is not listed
         controller.start(CONTAINER);
         // TODO mode checks that the module does not exist anymore
-        Assert.assertFalse("The patch " + patchID + " NOT should be listed as installed" ,
+        Assert.assertFalse("The patch " + patchID + " NOT should be listed as installed",
                 CliUtilsForPatching.getInstalledPatches().contains(patchID));
         Assert.assertFalse("The file " + resourceItem1.getItemName() + "should have been deleted", new File(modulePath1 + FILE_SEPARATOR + resourceItem1.getItemName()).exists());
         Assert.assertFalse("The file " + resourceItem2.getItemName() + "should have been deleted", new File(modulePath1 + FILE_SEPARATOR + resourceItem2.getItemName()).exists());
@@ -1039,23 +1026,207 @@ public class BasicOneOffPatchingScenariosTestCase {
         File zippedPatch = createZippedPatchFile(patchDir, patchID);
         System.out.println(zippedPatch.getAbsolutePath());
 
+        // apply patch and check if server is in restart-required mode
         controller.start(CONTAINER);
         CliUtilsForPatching.applyPatch(zippedPatch.getAbsolutePath());
+        Assert.assertTrue("server should be in restart-required mode",
+                CliUtilsForPatching.doesServerRequireRestart());
         controller.stop(CONTAINER);
+
         controller.start(CONTAINER);
         Assert.assertTrue("The patch " + patchID + " should be listed as installed",
                 CliUtilsForPatching.getInstalledPatches().contains(patchID));
-
         String newFilePath =  Joiner.on(FILE_SEPARATOR).join(
                 new String[] {PATCHES_PATH, baseLayerPatchID, moduleName, "main", "res1"});
         Assert.assertTrue("File " + newFilePath + " should exist", new File(newFilePath).exists());
 
-        controller.stop(CONTAINER);
-        controller.start(CONTAINER);
+        // rollback the patch and check if server is in restart-required mode
         CliUtilsForPatching.rollbackPatch(patchID);
+        Assert.assertTrue("server should be in restart-required mode",
+                CliUtilsForPatching.doesServerRequireRestart());
         controller.stop(CONTAINER);
 
+        controller.start(CONTAINER);
+        Assert.assertFalse("The patch " + patchID + " NOT should be listed as installed" ,
+                CliUtilsForPatching.getInstalledPatches().contains(patchID));
         Assert.assertFalse("File " + newFilePath + " should not exist", new File(newFilePath).exists());
+
+        // reapply patch and check if server is in restart-required mode
+        CliUtilsForPatching.applyPatch(zippedPatch.getAbsolutePath());
+        Assert.assertTrue("server should be in restart-required mode",
+                CliUtilsForPatching.doesServerRequireRestart());
+        controller.stop(CONTAINER);
+
+        controller.start(CONTAINER);
+        Assert.assertTrue("The patch " + patchID + " should be listed as installed",
+                CliUtilsForPatching.getInstalledPatches().contains(patchID));
+        Assert.assertTrue("File " + newFilePath + " should exist", new File(newFilePath).exists());
+        controller.stop(CONTAINER);
+    }
+
+    /**
+     * Prepare a one-off patch which removes module. Apply it, check that the module was removed
+     * Roll it back, check that the module was restored apply it again to make sure re-applying works as expected
+     * @throws Exception
+     */
+    @Test
+    public void testOneOffPatchRemovingAModule() throws Exception {
+        // prepare the patch
+        File tempDir = mkdir(new File(System.getProperty("java.io.tmpdir")), randomString());
+        String patchID = randomString();
+        String layerPatchID  = randomString();
+        File oneOffPatchDir = mkdir(tempDir, patchID );
+
+        // creates an empty module
+        final String moduleName = randomString();
+        File baseModuleDir = newFile(new File(PatchingTestUtil.AS_DISTRIBUTION), MODULES, SYSTEM, LAYERS, BASE);
+        File moduleDir = createModule0(baseModuleDir, moduleName);
+        File patchModuleDir = new File(PATCHES_PATH + FILE_SEPARATOR + layerPatchID + FILE_SEPARATOR + moduleName);
+        File moduleXml = new File(patchModuleDir, "main" + FILE_SEPARATOR + "module.xml");
+
+        ContentModification moduleRemoved = ContentModificationUtils.removeModule(moduleDir);
+        ProductConfig productConfig = new ProductConfig(PRODUCT, AS_VERSION, "main");
+        Patch oneOffPatch = PatchBuilder.create()
+                .setPatchId(patchID)
+                .setDescription("A one-off patch removing a module.")
+                .oneOffPatchIdentity(productConfig.getProductName(), productConfig.getProductVersion())
+                .getParent()
+                .oneOffPatchElement(layerPatchID, "base", false)
+                .setDescription("Remove module")
+                .addContentModification(moduleRemoved)
+                .getParent()
+                .build();
+        createPatchXMLFile(oneOffPatchDir, oneOffPatch);
+        File zippedPatch = createZippedPatchFile(oneOffPatchDir, patchID);
+
+        // apply the patch and check if server is in restart-required mode
+        controller.start(CONTAINER);
+        CliUtilsForPatching.applyPatch(zippedPatch.getAbsolutePath());
+        Assert.assertTrue("server should be in restart-required mode",
+                CliUtilsForPatching.doesServerRequireRestart());
+        controller.stop(CONTAINER);
+
+        // check if patch is listed as installed, files exists on correct place
+        controller.start(CONTAINER);
+        // TODO more checks that the module exists
+        Assert.assertTrue("The patch " + patchID + " should be listed as installed",
+                CliUtilsForPatching.getInstalledPatches().contains(patchID));
+        Assert.assertTrue("The file " + moduleXml.getName() + " should exist", moduleXml.exists());
+
+        // rollback the patch and check if server is in restart-required mode
+        CliUtilsForPatching.rollbackPatch(patchID);
+        Assert.assertTrue("server should be in restart-required mode",
+                CliUtilsForPatching.doesServerRequireRestart());
+        controller.stop(CONTAINER);
+
+        // check if patch is not listed
+        controller.start(CONTAINER);
+        // TODO mode checks that the module does not exist anymore
+        Assert.assertFalse("The patch " + patchID + " NOT should be listed as installed" ,
+                CliUtilsForPatching.getInstalledPatches().contains(patchID));
+        Assert.assertFalse("The file " + patchModuleDir + "should have been deleted", patchModuleDir.exists());
+
+        // reapply patch and check if server is in restart-required mode
+        CliUtilsForPatching.applyPatch(zippedPatch.getAbsolutePath());
+        Assert.assertTrue("server should be in restart-required mode",
+                CliUtilsForPatching.doesServerRequireRestart());
+        controller.stop(CONTAINER);
+
+        // check if patch is listed as installed, files exists on correct place
+        controller.start(CONTAINER);
+        // TODO more checks that the module exists
+        Assert.assertTrue("The patch " + patchID + " should be listed as installed",
+                CliUtilsForPatching.getInstalledPatches().contains(patchID));
+        Assert.assertTrue("The file " + moduleXml.getName() + " should exist", moduleXml.exists());
+        controller.stop(CONTAINER);
+    }
+
+    /**
+     * Prepare a one-off patch which removes multiple (2) modules. Apply it, check that the modules were removed
+     * Roll it back, check that the modules were restored apply it again to make sure re-applying works as expected
+     * @throws Exception
+     */
+    @Test
+    public void testOneOffPatchRemovingMultipleModules() throws Exception {
+        // prepare the patch
+        File tempDir = mkdir(new File(System.getProperty("java.io.tmpdir")), randomString());
+        String patchID = randomString();
+        String layerPatchID  = randomString();
+        File oneOffPatchDir = mkdir(tempDir, patchID );
+
+        // creates an empty module
+        final String moduleName1 = randomString();
+        File baseModuleDir1 = newFile(new File(PatchingTestUtil.AS_DISTRIBUTION), MODULES, SYSTEM, LAYERS, BASE);
+        File moduleDir1 = createModule0(baseModuleDir1, moduleName1);
+        File patchModuleDir1 = new File(PATCHES_PATH + FILE_SEPARATOR + layerPatchID + FILE_SEPARATOR + moduleName1);
+        File moduleXml1 = new File(patchModuleDir1, "main" + FILE_SEPARATOR + "module.xml");
+
+        final String moduleName2 = randomString();
+        File baseModuleDir2 = newFile(new File(PatchingTestUtil.AS_DISTRIBUTION), MODULES, SYSTEM, LAYERS, BASE);
+        File moduleDir2 = createModule0(baseModuleDir2, moduleName2);
+        File patchModuleDir2 = new File(PATCHES_PATH + FILE_SEPARATOR + layerPatchID + FILE_SEPARATOR + moduleName2);
+        File moduleXml2 = new File(patchModuleDir2, "main" + FILE_SEPARATOR + "module.xml");
+
+        ContentModification moduleRemoved1 = ContentModificationUtils.removeModule(moduleDir1);
+        ContentModification moduleRemoved2 = ContentModificationUtils.removeModule(moduleDir2);
+        ProductConfig productConfig = new ProductConfig(PRODUCT, AS_VERSION, "main");
+        Patch oneOffPatch = PatchBuilder.create()
+                .setPatchId(patchID)
+                .setDescription("A one-off patch removing multiple modules.")
+                .oneOffPatchIdentity(productConfig.getProductName(), productConfig.getProductVersion())
+                .getParent()
+                .oneOffPatchElement(layerPatchID, "base", false)
+                .setDescription("Remove modules")
+                .addContentModification(moduleRemoved1)
+                .addContentModification(moduleRemoved2)
+                .getParent()
+                .build();
+        createPatchXMLFile(oneOffPatchDir, oneOffPatch);
+        File zippedPatch = createZippedPatchFile(oneOffPatchDir, patchID);
+
+        // apply the patch and check if server is in restart-required mode
+        controller.start(CONTAINER);
+        CliUtilsForPatching.applyPatch(zippedPatch.getAbsolutePath());
+        Assert.assertTrue("server should be in restart-required mode",
+                CliUtilsForPatching.doesServerRequireRestart());
+        controller.stop(CONTAINER);
+
+        // check if patch is listed as installed, files exists on correct place
+        controller.start(CONTAINER);
+        // TODO more checks that the module exists
+        Assert.assertTrue("The patch " + patchID + " should be listed as installed",
+                CliUtilsForPatching.getInstalledPatches().contains(patchID));
+        Assert.assertTrue("The file " + moduleXml1.getName() + " should exist", moduleXml1.exists());
+        Assert.assertTrue("The file " + moduleXml2.getName() + " should exist", moduleXml2.exists());
+
+        // rollback the patch and check if server is in restart-required mode
+        CliUtilsForPatching.rollbackPatch(patchID);
+        Assert.assertTrue("server should be in restart-required mode",
+                CliUtilsForPatching.doesServerRequireRestart());
+        controller.stop(CONTAINER);
+
+        // check if patch is not listed
+        controller.start(CONTAINER);
+        // TODO mode checks that the module does not exist anymore
+        Assert.assertFalse("The patch " + patchID + " NOT should be listed as installed" ,
+                CliUtilsForPatching.getInstalledPatches().contains(patchID));
+        Assert.assertFalse("The file " + patchModuleDir1 + "should have been deleted", patchModuleDir1.exists());
+        Assert.assertFalse("The file " + patchModuleDir2 + "should have been deleted", patchModuleDir2.exists());
+
+        // reapply patch and check if server is in restart-required mode
+        CliUtilsForPatching.applyPatch(zippedPatch.getAbsolutePath());
+        Assert.assertTrue("server should be in restart-required mode",
+                CliUtilsForPatching.doesServerRequireRestart());
+        controller.stop(CONTAINER);
+
+        // check if patch is listed as installed, files exists on correct place
+        controller.start(CONTAINER);
+        // TODO more checks that the module exists
+        Assert.assertTrue("The patch " + patchID + " should be listed as installed",
+                CliUtilsForPatching.getInstalledPatches().contains(patchID));
+        Assert.assertTrue("The file " + moduleXml1.getName() + " should exist", moduleXml1.exists());
+        Assert.assertTrue("The file " + moduleXml2.getName() + " should exist", moduleXml2.exists());
+        controller.stop(CONTAINER);
     }
 
 }
