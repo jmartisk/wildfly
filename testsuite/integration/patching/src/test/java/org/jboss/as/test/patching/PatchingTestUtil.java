@@ -21,25 +21,21 @@
 
 package org.jboss.as.test.patching;
 
-import java.io.File;
-import java.io.FileNotFoundException;
-import java.io.FileOutputStream;
-import java.io.IOException;
-import java.io.OutputStream;
-import java.nio.charset.Charset;
-import java.util.Scanner;
-import java.util.UUID;
-
 import com.google.common.base.Joiner;
-
 import org.jboss.as.patching.IoUtils;
 import org.jboss.as.patching.ZipUtils;
 import org.jboss.as.patching.metadata.Patch;
 import org.jboss.as.patching.metadata.PatchXml;
 import org.junit.Assert;
 
+import java.io.*;
+import java.nio.charset.Charset;
+import java.util.Scanner;
+import java.util.UUID;
+
 import static java.lang.String.format;
 import static org.jboss.as.patching.IoUtils.safeClose;
+import static org.jboss.as.patching.Constants.*;
 import static org.jboss.as.patching.PatchLogger.ROOT_LOGGER;
 
 /**
@@ -52,8 +48,10 @@ public class PatchingTestUtil {
     public static final String AS_VERSION = System.getProperty("jbossas.version");
     public static final String PRODUCT = "WildFly";
     public static final String FILE_SEPARATOR = File.separator;
-    private static final String RELATIVE_PATCHES_PATH = Joiner.on(FILE_SEPARATOR).join(new String[] {"modules", "system", "layers", "base", "patches"});
+    private static final String RELATIVE_PATCHES_PATH = Joiner.on(FILE_SEPARATOR).join(new String[] {MODULES, SYSTEM, LAYERS, BASE, PATCHES});
     public static final String PATCHES_PATH = AS_DISTRIBUTION + FILE_SEPARATOR + RELATIVE_PATCHES_PATH;
+    private static final String RELATIVE_MODULES_PATH = Joiner.on(FILE_SEPARATOR).join(new String[] {MODULES, SYSTEM, LAYERS, BASE});
+    public static final String MODULES_PATH = AS_DISTRIBUTION + FILE_SEPARATOR + RELATIVE_MODULES_PATH;
 
     public static String randomString() {
         return UUID.randomUUID().toString();
