@@ -741,19 +741,24 @@ public class BasicOneOffPatchingScenariosTestCase {
         String layerPatchID  = randomString();
         File oneOffPatchDir = mkdir(tempDir, patchID);
 
+        final String moduleName1 =  "org.wildfly.awesomemodule1";
+        final String modulePath1 = PATCHES_PATH + FILE_SEPARATOR + layerPatchID + FILE_SEPARATOR + moduleName1.replace(".", FILE_SEPARATOR) + FILE_SEPARATOR + "main";
+        final String moduleName2 =  "org.wildfly.awesomemodul2";
+        final String modulePath2 = PATCHES_PATH + FILE_SEPARATOR + layerPatchID + FILE_SEPARATOR + moduleName2.replace(".", FILE_SEPARATOR) + FILE_SEPARATOR + "main";
+
         final ResourceItem resourceItem1 = new ResourceItem("testFile1", "content1".getBytes());
         final ResourceItem resourceItem2 = new ResourceItem("testFile2", "content2".getBytes());
 
-        ContentModification moduleAdded1 = ContentModificationUtils.addModule(oneOffPatchDir, layerPatchID, "org.wildfly.awesomemodule1", resourceItem1, resourceItem2);
-        ContentModification moduleAdded2 = ContentModificationUtils.addModule(oneOffPatchDir, layerPatchID, "org.wildfly.awesomemodule2", resourceItem1, resourceItem2);
+        ContentModification moduleAdded1 = ContentModificationUtils.addModule(oneOffPatchDir, layerPatchID, moduleName1, resourceItem1, resourceItem2);
+        ContentModification moduleAdded2 = ContentModificationUtils.addModule(oneOffPatchDir, layerPatchID, moduleName2, resourceItem1, resourceItem2);
         ProductConfig productConfig = new ProductConfig(PRODUCT, AS_VERSION, "main");
         Patch oneOffPatch = PatchBuilder.create()
                 .setPatchId(patchID)
-                .setDescription("A one-off patch adding a new module.")
+                .setDescription("A one-off patch adding multiple modules.")
                 .oneOffPatchIdentity(productConfig.getProductName(), productConfig.getProductVersion())
                 .getParent()
                 .oneOffPatchElement(layerPatchID, "base", false)
-                .setDescription("New module for the base layer")
+                .setDescription("New modules for the base layer")
                 .addContentModification(moduleAdded1)
                 .addContentModification(moduleAdded2)
                 .getParent()
@@ -773,6 +778,10 @@ public class BasicOneOffPatchingScenariosTestCase {
         // TODO more checks that the module exists
         Assert.assertTrue("The patch " + patchID + " should be listed as installed",
                 CliUtilsForPatching.getInstalledPatches().contains(patchID));
+        Assert.assertTrue("The file " + resourceItem1.getItemName() + " should exist", new File(modulePath1 + FILE_SEPARATOR + resourceItem1.getItemName()).exists());
+        Assert.assertTrue("The file " + resourceItem2.getItemName() + " should exist", new File(modulePath1 + FILE_SEPARATOR + resourceItem2.getItemName()).exists());
+        Assert.assertTrue("The file " + resourceItem1.getItemName() + " should exist", new File(modulePath2 + FILE_SEPARATOR + resourceItem1.getItemName()).exists());
+        Assert.assertTrue("The file " + resourceItem2.getItemName() + " should exist", new File(modulePath2 + FILE_SEPARATOR + resourceItem2.getItemName()).exists());
 
 
         // rollback the patch and check if server is in restart-required mode
@@ -786,6 +795,10 @@ public class BasicOneOffPatchingScenariosTestCase {
         // TODO mode checks that the module does not exist anymore
         Assert.assertFalse("The patch " + patchID + " NOT should be listed as installed" ,
                 CliUtilsForPatching.getInstalledPatches().contains(patchID));
+        Assert.assertFalse("The file " + resourceItem1.getItemName() + "should have been deleted", new File(modulePath1 + FILE_SEPARATOR + resourceItem1.getItemName()).exists());
+        Assert.assertFalse("The file " + resourceItem2.getItemName() + "should have been deleted", new File(modulePath1 + FILE_SEPARATOR + resourceItem2.getItemName()).exists());
+        Assert.assertFalse("The file " + resourceItem1.getItemName() + "should have been deleted", new File(modulePath2 + FILE_SEPARATOR + resourceItem1.getItemName()).exists());
+        Assert.assertFalse("The file " + resourceItem2.getItemName() + "should have been deleted", new File(modulePath2 + FILE_SEPARATOR + resourceItem2.getItemName()).exists());
 
         // reapply patch and check if server is in restart-required mode
         CliUtilsForPatching.applyPatch(zippedPatch.getAbsolutePath());
@@ -800,6 +813,10 @@ public class BasicOneOffPatchingScenariosTestCase {
         // TODO more checks that the module exists
         Assert.assertTrue("The patch " + patchID + " should be listed as installed",
                 CliUtilsForPatching.getInstalledPatches().contains(patchID));
+        Assert.assertTrue("The file " + resourceItem1.getItemName() + " should exist", new File(modulePath1 + FILE_SEPARATOR + resourceItem1.getItemName()).exists());
+        Assert.assertTrue("The file " + resourceItem2.getItemName() + " should exist", new File(modulePath1 + FILE_SEPARATOR + resourceItem2.getItemName()).exists());
+        Assert.assertTrue("The file " + resourceItem1.getItemName() + " should exist", new File(modulePath2 + FILE_SEPARATOR + resourceItem1.getItemName()).exists());
+        Assert.assertTrue("The file " + resourceItem2.getItemName() + " should exist", new File(modulePath2 + FILE_SEPARATOR + resourceItem2.getItemName()).exists());
         controller.stop(CONTAINER);
     }
 
