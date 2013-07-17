@@ -56,7 +56,7 @@ public class BasicOneOffPatchingScenariosTestCase {
     public void cleanup() throws Exception {
         if(controller.isStarted(CONTAINER))
             controller.stop(CONTAINER);
-        //CliUtilsForPatching.rollbackAll();
+        CliUtilsForPatching.rollbackAll();
     }
 
     /**
@@ -1026,23 +1026,42 @@ public class BasicOneOffPatchingScenariosTestCase {
         File zippedPatch = createZippedPatchFile(patchDir, patchID);
         System.out.println(zippedPatch.getAbsolutePath());
 
+        // apply patch and check if server is in restart-required mode
         controller.start(CONTAINER);
         CliUtilsForPatching.applyPatch(zippedPatch.getAbsolutePath());
+        Assert.assertTrue("server should be in restart-required mode",
+                CliUtilsForPatching.doesServerRequireRestart());
         controller.stop(CONTAINER);
+
         controller.start(CONTAINER);
         Assert.assertTrue("The patch " + patchID + " should be listed as installed",
                 CliUtilsForPatching.getInstalledPatches().contains(patchID));
-
         String newFilePath =  Joiner.on(FILE_SEPARATOR).join(
                 new String[] {PATCHES_PATH, baseLayerPatchID, moduleName, "main", "res1"});
         Assert.assertTrue("File " + newFilePath + " should exist", new File(newFilePath).exists());
 
-        controller.stop(CONTAINER);
-        controller.start(CONTAINER);
+        // rollback the patch and check if server is in restart-required mode
         CliUtilsForPatching.rollbackPatch(patchID);
+        Assert.assertTrue("server should be in restart-required mode",
+                CliUtilsForPatching.doesServerRequireRestart());
         controller.stop(CONTAINER);
 
+        controller.start(CONTAINER);
+        Assert.assertFalse("The patch " + patchID + " NOT should be listed as installed" ,
+                CliUtilsForPatching.getInstalledPatches().contains(patchID));
         Assert.assertFalse("File " + newFilePath + " should not exist", new File(newFilePath).exists());
+
+        // reapply patch and check if server is in restart-required mode
+        CliUtilsForPatching.applyPatch(zippedPatch.getAbsolutePath());
+        Assert.assertTrue("server should be in restart-required mode",
+                CliUtilsForPatching.doesServerRequireRestart());
+        controller.stop(CONTAINER);
+
+        controller.start(CONTAINER);
+        Assert.assertTrue("The patch " + patchID + " should be listed as installed",
+                CliUtilsForPatching.getInstalledPatches().contains(patchID));
+        Assert.assertTrue("File " + newFilePath + " should exist", new File(newFilePath).exists());
+        controller.stop(CONTAINER);
     }
 
     /**
