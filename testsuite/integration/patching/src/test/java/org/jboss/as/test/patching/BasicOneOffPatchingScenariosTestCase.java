@@ -690,11 +690,10 @@ public class BasicOneOffPatchingScenariosTestCase {
         // check if patch is listed as installed, files exists on correct place
         controller.start(CONTAINER);
         // TODO more checks that the module exists
-        Assert.assertTrue("The file " + resourceItem1.getItemName() + " should exist", new File(modulePath + FILE_SEPARATOR + resourceItem1.getItemName()).exists());
-        Assert.assertTrue("The file " + resourceItem2.getItemName() + " should exist", new File(modulePath + FILE_SEPARATOR + resourceItem2.getItemName()).exists());
         Assert.assertTrue("The patch " + patchID + " should be listed as installed",
                 CliUtilsForPatching.getInstalledPatches().contains(patchID));
-
+        Assert.assertTrue("The file " + resourceItem1.getItemName() + " should exist", new File(modulePath + FILE_SEPARATOR + resourceItem1.getItemName()).exists());
+        Assert.assertTrue("The file " + resourceItem2.getItemName() + " should exist", new File(modulePath + FILE_SEPARATOR + resourceItem2.getItemName()).exists());
 
         // rollback the patch and check if server is in restart-required mode
         CliUtilsForPatching.rollbackPatch(patchID);
@@ -705,10 +704,10 @@ public class BasicOneOffPatchingScenariosTestCase {
         // check if patch is not listed
         controller.start(CONTAINER);
         // TODO mode checks that the module does not exist anymore
-        Assert.assertFalse("The file " + resourceItem1.getItemName() + "should have been deleted", new File(modulePath + FILE_SEPARATOR + resourceItem1.getItemName()).exists());
-        Assert.assertFalse("The file " + resourceItem2.getItemName() + "should have been deleted", new File(modulePath + FILE_SEPARATOR + resourceItem2.getItemName()).exists());
         Assert.assertFalse("The patch " + patchID + " NOT should be listed as installed" ,
                 CliUtilsForPatching.getInstalledPatches().contains(patchID));
+        Assert.assertFalse("The file " + resourceItem1.getItemName() + "should have been deleted", new File(modulePath + FILE_SEPARATOR + resourceItem1.getItemName()).exists());
+        Assert.assertFalse("The file " + resourceItem2.getItemName() + "should have been deleted", new File(modulePath + FILE_SEPARATOR + resourceItem2.getItemName()).exists());
 
         // reapply patch and check if server is in restart-required mode
         CliUtilsForPatching.applyPatch(zippedPatch.getAbsolutePath());
@@ -721,10 +720,10 @@ public class BasicOneOffPatchingScenariosTestCase {
         // check if patch is listed as installed, files exists on correct place
         controller.start(CONTAINER);
         // TODO more checks that the module exists
-        Assert.assertTrue("The file " + resourceItem1.getItemName() + " should exist", new File(modulePath + FILE_SEPARATOR + resourceItem1.getItemName()).exists());
-        Assert.assertTrue("The file " + resourceItem2.getItemName() + " should exist", new File(modulePath + FILE_SEPARATOR + resourceItem2.getItemName()).exists());
         Assert.assertTrue("The patch " + patchID + " should be listed as installed",
                 CliUtilsForPatching.getInstalledPatches().contains(patchID));
+        Assert.assertTrue("The file " + resourceItem1.getItemName() + " should exist", new File(modulePath + FILE_SEPARATOR + resourceItem1.getItemName()).exists());
+        Assert.assertTrue("The file " + resourceItem2.getItemName() + " should exist", new File(modulePath + FILE_SEPARATOR + resourceItem2.getItemName()).exists());
         controller.stop(CONTAINER);
     }
 
