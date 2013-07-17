@@ -21,20 +21,28 @@
 
 package org.jboss.as.test.patching;
 
+import java.io.File;
+import java.io.IOException;
+
 import org.jboss.as.patching.metadata.BundleItem;
 import org.jboss.as.patching.metadata.ContentModification;
 import org.jboss.as.patching.metadata.MiscContentItem;
 import org.jboss.as.patching.metadata.ModuleItem;
 
-import java.io.File;
-import java.io.IOException;
-
-import static org.jboss.as.patching.Constants.*;
+import static org.jboss.as.patching.Constants.BUNDLES;
+import static org.jboss.as.patching.Constants.MISC;
+import static org.jboss.as.patching.Constants.MODULES;
 import static org.jboss.as.patching.HashUtils.hashFile;
 import static org.jboss.as.patching.IoUtils.NO_CONTENT;
 import static org.jboss.as.patching.IoUtils.newFile;
-import static org.jboss.as.patching.metadata.ModificationType.*;
-import static org.jboss.as.test.patching.PatchingTestUtil.*;
+import static org.jboss.as.patching.metadata.ModificationType.ADD;
+import static org.jboss.as.patching.metadata.ModificationType.MODIFY;
+import static org.jboss.as.patching.metadata.ModificationType.REMOVE;
+import static org.jboss.as.test.patching.PatchingTestUtil.createBundle0;
+import static org.jboss.as.test.patching.PatchingTestUtil.createModule0;
+import static org.jboss.as.test.patching.PatchingTestUtil.dump;
+import static org.jboss.as.test.patching.PatchingTestUtil.randomString;
+import static org.jboss.as.test.patching.PatchingTestUtil.touch;
 
 /**
  * @author <a href="http://jmesnil.net/">Jeff Mesnil</a> (c) 2013 Red Hat inc.

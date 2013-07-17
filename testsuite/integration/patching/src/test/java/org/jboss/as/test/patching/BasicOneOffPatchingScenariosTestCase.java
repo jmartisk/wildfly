@@ -21,7 +21,10 @@
 
 package org.jboss.as.test.patching;
 
+import java.io.File;
+
 import com.google.common.base.Joiner;
+
 import org.jboss.arquillian.container.test.api.ContainerController;
 import org.jboss.arquillian.container.test.api.RunAsClient;
 import org.jboss.arquillian.junit.Arquillian;
@@ -35,10 +38,22 @@ import org.junit.Assert;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
-import java.io.File;
-
+import static org.jboss.as.patching.Constants.BASE;
+import static org.jboss.as.patching.Constants.LAYERS;
+import static org.jboss.as.patching.Constants.SYSTEM;
 import static org.jboss.as.patching.IoUtils.mkdir;
-import static org.jboss.as.test.patching.PatchingTestUtil.*;
+import static org.jboss.as.patching.IoUtils.newFile;
+import static org.jboss.as.test.patching.PatchingTestUtil.AS_DISTRIBUTION;
+import static org.jboss.as.test.patching.PatchingTestUtil.AS_VERSION;
+import static org.jboss.as.test.patching.PatchingTestUtil.CONTAINER;
+import static org.jboss.as.test.patching.PatchingTestUtil.FILE_SEPARATOR;
+import static org.jboss.as.test.patching.PatchingTestUtil.PATCHES_PATH;
+import static org.jboss.as.test.patching.PatchingTestUtil.PRODUCT;
+import static org.jboss.as.test.patching.PatchingTestUtil.createModule0;
+import static org.jboss.as.test.patching.PatchingTestUtil.createPatchXMLFile;
+import static org.jboss.as.test.patching.PatchingTestUtil.createZippedPatchFile;
+import static org.jboss.as.test.patching.PatchingTestUtil.randomString;
+import static org.jboss.as.test.patching.PatchingTestUtil.readFile;
 
 /**
  * @author Jan Martiska
@@ -54,7 +69,7 @@ public class BasicOneOffPatchingScenariosTestCase {
     public void cleanup() throws Exception {
         if(controller.isStarted(CONTAINER))
             controller.stop(CONTAINER);
-        //CliUtilsForPatching.rollbackAll();
+        CliUtilsForPatching.rollbackAll();
     }
 
     /**
@@ -408,7 +423,8 @@ public class BasicOneOffPatchingScenariosTestCase {
         String originalContent1 = readFile(testFilePath1);
         String originalContent2 = readFile(testFilePath2);
 
-        ContentModification miscFileRemoved1 = ContentModificationUtils.removeMisc(new File(testFilePath1), "");
+        ContentModification miscFileRemoved1 = ContentModificationUtils.removeMisc(new File(testFilePath1),
+                "");
         ContentModification miscFileRemoved2 = ContentModificationUtils.removeMisc(new File(testFilePath2), "");
         ProductConfig productConfig = new ProductConfig(PRODUCT, AS_VERSION, "main");
         Patch oneOffPatch = PatchBuilder.create()
@@ -431,8 +447,10 @@ public class BasicOneOffPatchingScenariosTestCase {
         controller.start(CONTAINER);
         Assert.assertTrue("The patch " + patchID + " should be listed as installed" ,
                 CliUtilsForPatching.getInstalledPatches().contains(patchID));
-        Assert.assertFalse("File " + testFilePath1 + " should have been deleted", new File(testFilePath1).exists());
-        Assert.assertFalse("File " + testFilePath2 + " should have been deleted", new File(testFilePath2).exists());
+        Assert.assertFalse("File " + testFilePath1 + " should have been deleted",
+                new File(testFilePath1).exists());
+        Assert.assertFalse("File " + testFilePath2 + " should have been deleted",
+                new File(testFilePath2).exists());
 
         // rollback the patch
         CliUtilsForPatching.rollbackPatch(patchID);
@@ -456,7 +474,8 @@ public class BasicOneOffPatchingScenariosTestCase {
         Assert.assertTrue("The patch " + patchID + " should be listed as installed" ,
                 CliUtilsForPatching.getInstalledPatches().contains(patchID));
         Assert.assertFalse("File " + testFilePath1 + " should have been deleted", new File(testFilePath1).exists());
-        Assert.assertFalse("File " + testFilePath2 + " should have been deleted", new File(testFilePath2).exists());
+        Assert.assertFalse("File " + testFilePath2 + " should have been deleted",
+                new File(testFilePath2).exists());
         controller.stop(CONTAINER);
     }
 
@@ -481,7 +500,8 @@ public class BasicOneOffPatchingScenariosTestCase {
 
         ContentModification miscFileAdded = ContentModificationUtils.addMisc(oneOffPatchDir, patchID,
                 testContentAdded, testFileSegmentsAdded);
-        ContentModification miscFileDeleted = ContentModificationUtils.removeMisc(new File(testFilePathDeleted), "");
+        ContentModification miscFileDeleted = ContentModificationUtils.removeMisc(
+                new File(testFilePathDeleted), "");
         ProductConfig productConfig = new ProductConfig(PRODUCT, AS_VERSION, "main");
         Patch oneOffPatch = PatchBuilder.create()
                 .setPatchId(patchID)
@@ -501,7 +521,8 @@ public class BasicOneOffPatchingScenariosTestCase {
 
         // check if patch is installed, if files are created, deleted and check content
         controller.start(CONTAINER);
-        Assert.assertTrue("The patch " + patchID + " should be listed as installed", CliUtilsForPatching.getInstalledPatches().contains(patchID));
+        Assert.assertTrue("The patch " + patchID + " should be listed as installed",
+                CliUtilsForPatching.getInstalledPatches().contains(patchID));
         Assert.assertTrue("File1 " + testFilePathAdded + " should exist", new File(testFilePathAdded).exists());
         Assert.assertFalse("File2 " + testFilePathDeleted + " should have been deleted", new File(testFilePathDeleted).exists());
         Assert.assertEquals("check content of file after applying patch", testContentAdded, readFile(testFilePathAdded));
@@ -514,8 +535,10 @@ public class BasicOneOffPatchingScenariosTestCase {
         controller.start(CONTAINER);
         Assert.assertFalse("The patch " + patchID + " NOT should be listed as installed" ,
                 CliUtilsForPatching.getInstalledPatches().contains(patchID));
-        Assert.assertFalse("File1 + " + testFilePathAdded + " should have been deleted", new File(testFilePathAdded).exists());
-        Assert.assertTrue("File2 + " + testFilePathDeleted + " should exist", new File(testFilePathDeleted).exists());
+        Assert.assertFalse("File1 + " + testFilePathAdded + " should have been deleted",
+                new File(testFilePathAdded).exists());
+        Assert.assertTrue("File2 + " + testFilePathDeleted + " should exist",
+                new File(testFilePathDeleted).exists());
         Assert.assertEquals("check content of file after patch rollback", originalContentOfDeletedFile, readFile(testFilePathDeleted));
 
         // reapply the patch
@@ -525,7 +548,8 @@ public class BasicOneOffPatchingScenariosTestCase {
         // check if patch is installed, if files exists and check content of files
         controller.start(CONTAINER);
         Assert.assertTrue("The patch " + patchID + " should be listed as installed", CliUtilsForPatching.getInstalledPatches().contains(patchID));
-        Assert.assertTrue("File1 " + testFilePathAdded + " should exist", new File(testFilePathAdded).exists());
+        Assert.assertTrue("File1 " + testFilePathAdded + " should exist",
+                new File(testFilePathAdded).exists());
         Assert.assertFalse("File2 " + testFilePathDeleted + " should have been deleted", new File(testFilePathDeleted).exists());
         Assert.assertEquals("check content of file after applying patch", testContentAdded, readFile(testFilePathAdded));
         controller.stop(CONTAINER);
@@ -777,6 +801,63 @@ public class BasicOneOffPatchingScenariosTestCase {
         Assert.assertTrue("The patch " + patchID + " should be listed as installed",
                 CliUtilsForPatching.getInstalledPatches().contains(patchID));
         controller.stop(CONTAINER);
+    }
+
+    /**
+     * Create a new module in AS distribution,
+     * create a patch which modifies it by adding a new text file into it.
+     */
+    @Test
+    public void testModifyAModule() throws Exception {
+        ProductConfig productConfig = new ProductConfig(PRODUCT, AS_VERSION, "main");
+        String moduleName = randomString();
+
+        // creates an empty module
+        File baseModuleDir = newFile(new File(PatchingTestUtil.AS_DISTRIBUTION), "modules", SYSTEM, LAYERS, BASE);
+        File moduleDir = createModule0(baseModuleDir, moduleName);
+
+        System.out.println("moduleDir = " + moduleDir.getAbsolutePath());
+
+        // prepare the patch
+        String patchID = randomString();
+        String baseLayerPatchID = randomString();
+        File tempDir = mkdir(new File(System.getProperty("java.io.tmpdir")), randomString());
+        File patchDir = mkdir(tempDir, patchID);
+
+        // create the patch with the updated module
+        ContentModification moduleModified = ContentModificationUtils.modifyModule(patchDir, baseLayerPatchID, moduleDir,
+                new ResourceItem("res1", "new resource in the module".getBytes()));
+
+        Patch patch = PatchBuilder.create()
+                .setPatchId(patchID)
+                .setDescription(randomString())
+                    .oneOffPatchIdentity(productConfig.getProductName(), productConfig.getProductVersion())
+                    .getParent()
+                .oneOffPatchElement(baseLayerPatchID, BASE, false)
+                    .addContentModification(moduleModified)
+                    .getParent()
+                .build();
+        createPatchXMLFile(patchDir, patch);
+        File zippedPatch = createZippedPatchFile(patchDir, patchID);
+        System.out.println(zippedPatch.getAbsolutePath());
+
+        controller.start(CONTAINER);
+        CliUtilsForPatching.applyPatch(zippedPatch.getAbsolutePath());
+        controller.stop(CONTAINER);
+        controller.start(CONTAINER);
+        Assert.assertTrue("The patch " + patchID + " should be listed as installed",
+                CliUtilsForPatching.getInstalledPatches().contains(patchID));
+
+        String newFilePath =  Joiner.on(FILE_SEPARATOR).join(
+                new String[] {PATCHES_PATH, baseLayerPatchID, moduleName, "main", "res1"});
+        Assert.assertTrue("File " + newFilePath + " should exist", new File(newFilePath).exists());
+
+        controller.stop(CONTAINER);
+        controller.start(CONTAINER);
+        CliUtilsForPatching.rollbackPatch(patchID);
+        controller.stop(CONTAINER);
+
+        Assert.assertFalse("File " + newFilePath + " should not exist", new File(newFilePath).exists());
     }
 
 }

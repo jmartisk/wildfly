@@ -21,18 +21,22 @@
 
 package org.jboss.as.test.patching;
 
-import com.google.common.base.Joiner;
-import org.jboss.as.patching.IoUtils;
-import org.jboss.as.patching.ZipUtils;
-import org.jboss.as.patching.metadata.ModuleItem;
-import org.jboss.as.patching.metadata.Patch;
-import org.jboss.as.patching.metadata.PatchXml;
-import org.junit.Assert;
-
-import java.io.*;
+import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.OutputStream;
 import java.nio.charset.Charset;
 import java.util.Scanner;
 import java.util.UUID;
+
+import com.google.common.base.Joiner;
+
+import org.jboss.as.patching.IoUtils;
+import org.jboss.as.patching.ZipUtils;
+import org.jboss.as.patching.metadata.Patch;
+import org.jboss.as.patching.metadata.PatchXml;
+import org.junit.Assert;
 
 import static java.lang.String.format;
 import static org.jboss.as.patching.IoUtils.safeClose;
@@ -146,7 +150,7 @@ public class PatchingTestUtil {
         content.append(
                 format("<module xmlns=\"urn:jboss:module:1.2\" name=\"%s\" slot=\"main\" />\n", moduleName));
         content.append("  <resources>\n");
-        content.append("    resource-root path=\".\"/>\n");
+        content.append("    <resource-root path=\".\"/>\n");
         for (String resource : resources) {
             content.append(format("    <resource-root path=\"%s\"/>\n", resource));
         }
@@ -200,9 +204,7 @@ public class PatchingTestUtil {
             name = moduleSpec;
             slot = "main";
         }
-        assert slot.equals(ModuleItem.MAIN_SLOT); // update to support other slots too
         final String[] segments = name.split("\\.");
-        assert segments.length > 0;
         File dir = baseDir;
         for (String segment : segments) {
             dir = new File(dir, segment);
