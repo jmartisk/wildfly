@@ -37,7 +37,9 @@ import org.junit.runner.RunWith;
 
 import java.io.File;
 
+import static org.jboss.as.patching.Constants.*;
 import static org.jboss.as.patching.IoUtils.mkdir;
+import static org.jboss.as.patching.IoUtils.newFile;
 import static org.jboss.as.test.patching.PatchingTestUtil.*;
 
 /**
@@ -339,4 +341,76 @@ public class OverridePreserveTestCase {
         Assert.assertEquals("Misc file should be restored", file2modifiedContent, PatchingTestUtil.readFile(file2));
         controller.stop(CONTAINER);
     }
+
+    /**
+     * Prepare a patch that modifies module.
+     * Modify this module before installing the patch.
+     * apply patch with --override-modules
+     * rollback patch
+     */
+    @Test
+    public void testOverrideModules() throws Exception {
+        ProductConfig productConfig = new ProductConfig(PRODUCT, AS_VERSION, "main");
+        String moduleName = randomString();
+
+        // creates an empty module
+        File baseModuleDir = newFile(new File(PatchingTestUtil.AS_DISTRIBUTION), "modules", SYSTEM, LAYERS, BASE);
+        File moduleDir = createModule0(baseModuleDir, moduleName);
+
+        System.out.println("moduleDir = " + moduleDir.getAbsolutePath());
+
+        // prepare the patch
+        String patchID = randomString();
+        String baseLayerPatchID = randomString();
+        File tempDir = mkdir(new File(System.getProperty("java.io.tmpdir")), randomString());
+        File patchDir = mkdir(tempDir, patchID);
+
+        // create the patch with the updated module
+        ContentModification moduleModified = ContentModificationUtils.modifyModule(patchDir, baseLayerPatchID, moduleDir,
+                new ResourceItem("res1", "new resource in the module".getBytes()));
+
+        Patch patch = PatchBuilder.create()
+                .setPatchId(patchID)
+                .setDescription(randomString())
+                .oneOffPatchIdentity(productConfig.getProductName(), productConfig.getProductVersion())
+                .getParent()
+                .oneOffPatchElement(baseLayerPatchID, BASE, false)
+                .addContentModification(moduleModified)
+                .getParent()
+                .build();
+        createPatchXMLFile(patchDir, patch);
+        File zippedPatch = createZippedPatchFile(patchDir, patchID);
+        System.out.println(zippedPatch.getAbsolutePath());
+
+        // modify module
+        File fileModifyModule = new File(moduleDir.getAbsolutePath() + FILE_SEPARATOR + "main", "newFile");
+        dump(fileModifyModule, "test content");
+
+        // apply patch without --override-modules
+        controller.start(CONTAINER);
+        Assert.assertFalse("Server should reject patch installation in this case",
+                CliUtilsForPatching.applyPatch(zippedPatch.getAbsolutePath()));
+
+        // apply patch with --override-modules
+        Assert.assertTrue("Patch should be accepted",
+                CliUtilsForPatching.applyPatch(zippedPatch.getAbsolutePath(), CliUtilsForPatching.OVERRIDE_MODULES));
+        Assert.assertTrue("server should be in restart-required mode", CliUtilsForPatching.doesServerRequireRestart());
+        controller.stop(CONTAINER);
+
+        controller.start(CONTAINER);
+        Assert.assertTrue("The patch " + patchID + " should be listed as installed", CliUtilsForPatching.getInstalledPatches().contains(patchID));
+
+        // rollback patch
+        Assert.assertTrue("Rollback should be accepted",
+                CliUtilsForPatching.rollbackPatch(patchID));
+        Assert.assertTrue("server should be in restart-required mode", CliUtilsForPatching.doesServerRequireRestart());
+        controller.stop(CONTAINER);
+
+        controller.start(CONTAINER);
+        Assert.assertFalse("The patch " + patchID + " NOT should be listed as installed" ,
+                CliUtilsForPatching.getInstalledPatches().contains(patchID));
+        controller.stop(CONTAINER);
+    }
+
+
 }
