@@ -40,6 +40,7 @@ import java.io.File;
 import static org.jboss.as.patching.Constants.*;
 import static org.jboss.as.patching.IoUtils.mkdir;
 import static org.jboss.as.patching.IoUtils.newFile;
+import static org.jboss.as.patching.IoUtils.recursiveDelete;
 import static org.jboss.as.test.patching.PatchingTestUtil.*;
 
 /**
@@ -118,6 +119,9 @@ public class BasicOneOffPatchingScenariosTestCase {
                 CliUtilsForPatching.getInstalledPatches().contains(patchID));
         Assert.assertEquals("Unexpected contents of misc file", fileContent, readFile(path));
         controller.stop(CONTAINER);
+
+        // remove temp files
+        recursiveDelete(tempDir);
     }
 
     /**
@@ -198,6 +202,9 @@ public class BasicOneOffPatchingScenariosTestCase {
         patchContent = readFile(testFilePath2);
         Assert.assertEquals("check content of file2 after applying patch", testContent2, patchContent);
         controller.stop(CONTAINER);
+
+        // remove temp files
+        recursiveDelete(tempDir);
     }
 
     /**
@@ -263,6 +270,9 @@ public class BasicOneOffPatchingScenariosTestCase {
         patchContent = readFile(testFilePath);
         Assert.assertEquals("check content of file after reapplying", testContent, patchContent);
         controller.stop(CONTAINER);
+
+        // remove temp files
+        recursiveDelete(tempDir);
     }
 
     /**
@@ -340,6 +350,9 @@ public class BasicOneOffPatchingScenariosTestCase {
         patchContent2 = readFile(testFilePath2);
         Assert.assertEquals("check content of file after reapplying2", testContent2, patchContent2);
         controller.stop(CONTAINER);
+
+        // remove temp files
+        recursiveDelete(tempDir);
     }
 
     /**
@@ -405,6 +418,9 @@ public class BasicOneOffPatchingScenariosTestCase {
                 CliUtilsForPatching.getInstalledPatches().contains(patchID));
         Assert.assertFalse("File " + testFilePath + " should have been deleted", new File(testFilePath).exists());
         controller.stop(CONTAINER);
+
+        // remove temp files
+        recursiveDelete(tempDir);
     }
 
     /**
@@ -482,6 +498,9 @@ public class BasicOneOffPatchingScenariosTestCase {
         Assert.assertFalse("File " + testFilePath2 + " should have been deleted",
                 new File(testFilePath2).exists());
         controller.stop(CONTAINER);
+
+        // remove temp files
+        recursiveDelete(tempDir);
     }
 
     /**
@@ -552,6 +571,9 @@ public class BasicOneOffPatchingScenariosTestCase {
         Assert.assertEquals("Unexpected contents of misc file", testContent1, readFile(testFilePath1));
         Assert.assertFalse("File " + testFilePathDeleted + " should have been deleted", new File(testFilePathDeleted).exists());
         controller.stop(CONTAINER);
+
+        // remove temp files
+        recursiveDelete(tempDir);
     }
 
     /**
@@ -642,6 +664,9 @@ public class BasicOneOffPatchingScenariosTestCase {
         Assert.assertFalse("File " + testFilePathDeleted1 + " should have been deleted", new File(testFilePathDeleted1).exists());
         Assert.assertFalse("File " + testFilePathDeleted2 + " should have been deleted", new File(testFilePathDeleted2).exists());
         controller.stop(CONTAINER);
+
+        // remove temp files
+        recursiveDelete(tempDir);
     }
 
     /**
@@ -721,6 +746,9 @@ public class BasicOneOffPatchingScenariosTestCase {
         Assert.assertFalse("File2 " + testFilePathDeleted + " should have been deleted", new File(testFilePathDeleted).exists());
         Assert.assertEquals("check content of file after applying patch", testContentAdded, readFile(testFilePathAdded));
         controller.stop(CONTAINER);
+
+        // remove temp files
+        recursiveDelete(tempDir);
     }
 
     /**
@@ -815,6 +843,9 @@ public class BasicOneOffPatchingScenariosTestCase {
         Assert.assertEquals("check content of file after applying patch", testContentAdded1, readFile(testFilePathAdded1));
         Assert.assertEquals("check content of file after applying patch", testContentAdded2, readFile(testFilePathAdded2));
         controller.stop(CONTAINER);
+
+        // remove temp files
+        recursiveDelete(tempDir);
     }
 
     /**
@@ -894,6 +925,9 @@ public class BasicOneOffPatchingScenariosTestCase {
         Assert.assertTrue("The file " + resourceItem1.getItemName() + " should exist", new File(modulePath + FILE_SEPARATOR + resourceItem1.getItemName()).exists());
         Assert.assertTrue("The file " + resourceItem2.getItemName() + " should exist", new File(modulePath + FILE_SEPARATOR + resourceItem2.getItemName()).exists());
         controller.stop(CONTAINER);
+
+        // remove temp files
+        recursiveDelete(tempDir);
     }
 
     /**
@@ -986,6 +1020,9 @@ public class BasicOneOffPatchingScenariosTestCase {
         Assert.assertTrue("The file " + resourceItem1.getItemName() + " should exist", new File(modulePath2 + FILE_SEPARATOR + resourceItem1.getItemName()).exists());
         Assert.assertTrue("The file " + resourceItem2.getItemName() + " should exist", new File(modulePath2 + FILE_SEPARATOR + resourceItem2.getItemName()).exists());
         controller.stop(CONTAINER);
+
+        // remove temp files
+        recursiveDelete(tempDir);
     }
 
     /**
@@ -1062,6 +1099,9 @@ public class BasicOneOffPatchingScenariosTestCase {
                 CliUtilsForPatching.getInstalledPatches().contains(patchID));
         Assert.assertTrue("File " + newFilePath + " should exist", new File(newFilePath).exists());
         controller.stop(CONTAINER);
+
+        // remove temp files
+        recursiveDelete(tempDir);
     }
 
     /**
@@ -1139,6 +1179,9 @@ public class BasicOneOffPatchingScenariosTestCase {
                 CliUtilsForPatching.getInstalledPatches().contains(patchID));
         Assert.assertTrue("The file " + moduleXml.getName() + " should exist", moduleXml.exists());
         controller.stop(CONTAINER);
+
+        // remove temp files
+        recursiveDelete(tempDir);
     }
 
     /**
@@ -1227,6 +1270,9 @@ public class BasicOneOffPatchingScenariosTestCase {
         Assert.assertTrue("The file " + moduleXml1.getName() + " should exist", moduleXml1.exists());
         Assert.assertTrue("The file " + moduleXml2.getName() + " should exist", moduleXml2.exists());
         controller.stop(CONTAINER);
+
+        // remove temp files
+        recursiveDelete(tempDir);
     }
 
 }
