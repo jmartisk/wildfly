@@ -119,6 +119,9 @@ public class NativeApiPatchingTestCase {
         Assert.assertTrue("The patch " + patchID + " should be listed as installed",
                 NativeApiUtilsForPatching.getInstalledPatches(client).contains(patchID));
 
+        ModelNode itemForPatch = NativeApiUtilsForPatching.getHistoryItemForOneOffPatch(client, patchID);
+        Assert.assertNotNull("The patch should appear in patching history", itemForPatch);
+
         Assert.assertEquals("Unexpected contents of misc file", fileContent, readFile(path));
 
         o = NativeApiUtilsForPatching.createRollbackOperation(patchID);
