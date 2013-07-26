@@ -41,6 +41,7 @@ import java.io.File;
 import static org.jboss.as.patching.Constants.*;
 import static org.jboss.as.patching.IoUtils.mkdir;
 import static org.jboss.as.patching.IoUtils.newFile;
+import static org.jboss.as.patching.IoUtils.recursiveDelete;
 import static org.jboss.as.test.patching.PatchingTestUtil.*;
 
 /**
@@ -147,6 +148,9 @@ public class OverridePreserveTestCase {
         Assert.assertEquals("Misc file should not be overridden", file1modifiedContent, PatchingTestUtil.readFile(file1));
         Assert.assertEquals("Misc file should not be overridden", file2modifiedContent, PatchingTestUtil.readFile(file2));
         controller.stop(CONTAINER);
+
+        // remove temp files
+        recursiveDelete(tempDir);
     }
 
     /**
@@ -212,6 +216,9 @@ public class OverridePreserveTestCase {
         Assert.assertEquals("Misc file should not be overridden", file1patchedContent, PatchingTestUtil.readFile(file1));
         Assert.assertEquals("Misc file should be restored", file2modifiedContent, PatchingTestUtil.readFile(file2));
         controller.stop(CONTAINER);
+
+        // remove temp files
+        recursiveDelete(tempDir);
     }
 
     /**
@@ -277,6 +284,9 @@ public class OverridePreserveTestCase {
         Assert.assertEquals("Misc file should not be overridden", file1patchedContent, PatchingTestUtil.readFile(file1));
         Assert.assertEquals("Misc file should be restored", file2modifiedContent, PatchingTestUtil.readFile(file2));
         controller.stop(CONTAINER);
+
+        // remove temp files
+        recursiveDelete(tempDir);
     }
 
     /**
@@ -344,6 +354,9 @@ public class OverridePreserveTestCase {
         Assert.assertEquals("Misc file should not be overridden", file1modifiedContent, PatchingTestUtil.readFile(file1));
         Assert.assertEquals("Misc file should be restored", file2modifiedContent, PatchingTestUtil.readFile(file2));
         controller.stop(CONTAINER);
+
+        // remove temp files
+        recursiveDelete(tempDir);
     }
 
     /**
@@ -413,6 +426,9 @@ public class OverridePreserveTestCase {
         Assert.assertFalse("The patch " + patchID + " NOT should be listed as installed" ,
                 CliUtilsForPatching.getInstalledPatches().contains(patchID));
         controller.stop(CONTAINER);
+
+        // remove temp files
+        recursiveDelete(tempDir);
     }
 
 
