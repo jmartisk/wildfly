@@ -31,7 +31,12 @@ import org.jboss.as.patching.metadata.PatchXml;
 import org.jboss.as.process.protocol.StreamUtils;
 import org.junit.Assert;
 
-import java.io.*;
+import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
+import java.io.FileWriter;
+import java.io.IOException;
+import java.io.OutputStream;
 import java.nio.charset.Charset;
 import java.util.Properties;
 import java.util.Scanner;

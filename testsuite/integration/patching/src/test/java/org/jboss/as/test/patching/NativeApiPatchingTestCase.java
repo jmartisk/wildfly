@@ -23,6 +23,7 @@
 package org.jboss.as.test.patching;
 
 import java.io.File;
+import java.io.IOException;
 import java.net.UnknownHostException;
 
 import com.google.common.base.Joiner;
@@ -41,6 +42,7 @@ import org.jboss.as.version.ProductConfig;
 import org.jboss.dmr.ModelNode;
 import org.junit.After;
 import org.junit.Assert;
+import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
@@ -66,11 +68,22 @@ public class NativeApiPatchingTestCase {
     @ArquillianResource
     private ContainerController controller;
 
+    private File tempDir;
+
+    @Before
+    public void prepare() throws IOException {
+        tempDir = mkdir(new File(System.getProperty("java.io.tmpdir")), randomString());
+    }
+
     @After
     public void cleanup() throws Exception {
         if(controller.isStarted(CONTAINER))
             controller.stop(CONTAINER);
         CliUtilsForPatching.rollbackAll();
+
+        if (IoUtils.recursiveDelete(tempDir)) {
+            tempDir.deleteOnExit();
+        }
     }
 
     /**
@@ -84,7 +97,6 @@ public class NativeApiPatchingTestCase {
 
         final String fileContent = "Hello World!";
         // prepare the patch
-        File tempDir = mkdir(new File(System.getProperty("java.io.tmpdir")), randomString());
         String patchID = randomString();
         File oneOffPatchDir = mkdir(tempDir, patchID);
         String[] miscFileLocation = new String[] {"newPatchDirectory", "awesomeFile"};
