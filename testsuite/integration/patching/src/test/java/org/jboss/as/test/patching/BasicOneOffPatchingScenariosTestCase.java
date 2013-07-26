@@ -26,16 +26,19 @@ import org.jboss.arquillian.container.test.api.ContainerController;
 import org.jboss.arquillian.container.test.api.RunAsClient;
 import org.jboss.arquillian.junit.Arquillian;
 import org.jboss.arquillian.test.api.ArquillianResource;
+import org.jboss.as.patching.IoUtils;
 import org.jboss.as.patching.metadata.ContentModification;
 import org.jboss.as.patching.metadata.Patch;
 import org.jboss.as.patching.metadata.PatchBuilder;
 import org.jboss.as.version.ProductConfig;
 import org.junit.After;
 import org.junit.Assert;
+import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
 import java.io.File;
+import java.io.IOException;
 
 import static org.jboss.as.patching.Constants.*;
 import static org.jboss.as.patching.IoUtils.mkdir;
@@ -52,11 +55,22 @@ public class BasicOneOffPatchingScenariosTestCase {
     @ArquillianResource
     private ContainerController controller;
 
+    private File tempDir;
+
+    @Before
+    public void prepare() throws IOException {
+        tempDir = mkdir(new File(System.getProperty("java.io.tmpdir")), randomString());
+    }
+
     @After
     public void cleanup() throws Exception {
         if(controller.isStarted(CONTAINER))
             controller.stop(CONTAINER);
         CliUtilsForPatching.rollbackAll();
+
+        if (IoUtils.recursiveDelete(tempDir)) {
+            tempDir.deleteOnExit();
+        }
     }
 
     /**
@@ -67,7 +81,6 @@ public class BasicOneOffPatchingScenariosTestCase {
     public void testOneOffPatchAddingAMiscFile() throws Exception {
         final String fileContent = "Hello World!";
         // prepare the patch
-        File tempDir = mkdir(new File(System.getProperty("java.io.tmpdir")), randomString());
         String patchID = randomString();
         File oneOffPatchDir = mkdir(tempDir, patchID);
         ContentModification miscFileAdded = ContentModificationUtils.addMisc(oneOffPatchDir, patchID,
@@ -127,7 +140,6 @@ public class BasicOneOffPatchingScenariosTestCase {
     @Test
     public void testOneOffPatchAddingMultipleMiscFiles() throws Exception {
         // prepare the patch
-        File tempDir = mkdir(new File(System.getProperty("java.io.tmpdir")), randomString());
         String patchID = randomString();
         File oneOffPatchDir = mkdir(tempDir, patchID);
 
@@ -207,7 +219,6 @@ public class BasicOneOffPatchingScenariosTestCase {
     @Test
     public void testOneOffPatchModifyingAMiscFile() throws Exception {
         // prepare the patch
-        File tempDir = mkdir(new File(System.getProperty("java.io.tmpdir")), randomString());
         String patchID = randomString();
         File oneOffPatchDir = mkdir(tempDir, patchID);
 
@@ -272,7 +283,6 @@ public class BasicOneOffPatchingScenariosTestCase {
     @Test
     public void testOneOffPatchModifyingMultipleMiscFiles() throws Exception {
         // prepare the patch
-        File tempDir = mkdir(new File(System.getProperty("java.io.tmpdir")), randomString());
         String patchID = randomString();
         File oneOffPatchDir = mkdir(tempDir, patchID);
 
@@ -349,7 +359,6 @@ public class BasicOneOffPatchingScenariosTestCase {
     @Test
     public void testOneOffPatchDeletingAMiscFile() throws Exception {
         // prepare the patch
-        File tempDir = mkdir(new File(System.getProperty("java.io.tmpdir")), randomString());
         String patchID = randomString();
         File oneOffPatchDir = mkdir(tempDir, patchID);
 
@@ -414,7 +423,6 @@ public class BasicOneOffPatchingScenariosTestCase {
     @Test
     public void testOneOffPatchDeletingMultipleMiscFiles() throws Exception {
         // prepare the patch
-        File tempDir = mkdir(new File(System.getProperty("java.io.tmpdir")), randomString());
         String patchID = randomString();
         File oneOffPatchDir = mkdir(tempDir, patchID);
 
@@ -491,7 +499,6 @@ public class BasicOneOffPatchingScenariosTestCase {
     @Test
     public void testOneOffPatchModifyingAMiscFileDeletingAnotherMiscFile() throws Exception {
         // prepare the patch
-        File tempDir = mkdir(new File(System.getProperty("java.io.tmpdir")), randomString());
         String patchID = randomString();
         File oneOffPatchDir = mkdir(tempDir, patchID);
 
@@ -561,7 +568,6 @@ public class BasicOneOffPatchingScenariosTestCase {
     @Test
     public void testOneOffPatchModifyingMultipleMiscFilesDeletingMultipleMiscFiles() throws Exception {
         // prepare the patch
-        File tempDir = mkdir(new File(System.getProperty("java.io.tmpdir")), randomString());
         String patchID = randomString();
         File oneOffPatchDir = mkdir(tempDir, patchID);
 
@@ -651,7 +657,6 @@ public class BasicOneOffPatchingScenariosTestCase {
     @Test
     public void testOneOffPatchAddingAMiscFileDeletingAnotherMiscFile() throws Exception {
         // prepare the patch
-        File tempDir = mkdir(new File(System.getProperty("java.io.tmpdir")), randomString());
         String patchID = randomString();
         File oneOffPatchDir = mkdir(tempDir, patchID);
 
@@ -730,7 +735,6 @@ public class BasicOneOffPatchingScenariosTestCase {
     @Test
     public void testOneOffPatchAddingMultipleMiscFilesDeletingMultipleMiscFiles() throws Exception {
         // prepare the patch
-        File tempDir = mkdir(new File(System.getProperty("java.io.tmpdir")), randomString());
         String patchID = randomString();
         File oneOffPatchDir = mkdir(tempDir, patchID);
 
@@ -825,7 +829,6 @@ public class BasicOneOffPatchingScenariosTestCase {
     @Test
     public void testOneOffPatchAddingAModule() throws Exception {
         // prepare the patch
-        File tempDir = mkdir(new File(System.getProperty("java.io.tmpdir")), randomString());
         String patchID = randomString();
         String layerPatchID  = randomString();
         File oneOffPatchDir = mkdir(tempDir, patchID);
@@ -904,7 +907,6 @@ public class BasicOneOffPatchingScenariosTestCase {
     @Test
     public void testOneOffPatchAddingMultipleModules() throws Exception {
         // prepare the patch
-        File tempDir = mkdir(new File(System.getProperty("java.io.tmpdir")), randomString());
         String patchID = randomString();
         String layerPatchID  = randomString();
         File oneOffPatchDir = mkdir(tempDir, patchID);
@@ -1006,7 +1008,6 @@ public class BasicOneOffPatchingScenariosTestCase {
         // prepare the patch
         String patchID = randomString();
         String baseLayerPatchID = randomString();
-        File tempDir = mkdir(new File(System.getProperty("java.io.tmpdir")), randomString());
         File patchDir = mkdir(tempDir, patchID);
 
         // create the patch with the updated module
@@ -1072,7 +1073,6 @@ public class BasicOneOffPatchingScenariosTestCase {
     @Test
     public void testOneOffPatchRemovingAModule() throws Exception {
         // prepare the patch
-        File tempDir = mkdir(new File(System.getProperty("java.io.tmpdir")), randomString());
         String patchID = randomString();
         String layerPatchID  = randomString();
         File oneOffPatchDir = mkdir(tempDir, patchID );
@@ -1149,7 +1149,6 @@ public class BasicOneOffPatchingScenariosTestCase {
     @Test
     public void testOneOffPatchRemovingMultipleModules() throws Exception {
         // prepare the patch
-        File tempDir = mkdir(new File(System.getProperty("java.io.tmpdir")), randomString());
         String patchID = randomString();
         String layerPatchID  = randomString();
         File oneOffPatchDir = mkdir(tempDir, patchID );

@@ -25,6 +25,7 @@ import org.jboss.arquillian.container.test.api.ContainerController;
 import org.jboss.arquillian.container.test.api.RunAsClient;
 import org.jboss.arquillian.junit.Arquillian;
 import org.jboss.arquillian.test.api.ArquillianResource;
+import org.jboss.as.patching.IoUtils;
 import org.jboss.as.patching.metadata.ContentModification;
 import org.jboss.as.patching.metadata.Patch;
 import org.jboss.as.patching.metadata.PatchBuilder;
@@ -58,6 +59,8 @@ public class OverridePreserveTestCase {
     private String file2originalContent;
     private final String file2modifiedContent = "I manually edited LICENSE.txt and it now looks like this.";
 
+    private File tempDir;
+
     @ArquillianResource
     private ContainerController controller;
 
@@ -65,6 +68,7 @@ public class OverridePreserveTestCase {
     public void setUp() throws Exception {
         file1originalContent = PatchingTestUtil.readFile(file1);
         file2originalContent = PatchingTestUtil.readFile(file2);
+        tempDir = mkdir(new File(System.getProperty("java.io.tmpdir")), randomString());
     }
 
     @After
@@ -74,6 +78,10 @@ public class OverridePreserveTestCase {
         CliUtilsForPatching.rollbackAll();
         PatchingTestUtil.setFileContent(file1, file1originalContent);
         PatchingTestUtil.setFileContent(file2, file2originalContent);
+
+        if (IoUtils.recursiveDelete(tempDir)) {
+            tempDir.deleteOnExit();
+        }
     }
 
     /**
@@ -85,7 +93,6 @@ public class OverridePreserveTestCase {
     @Test
     public void testPreserveMiscFiles() throws Exception {
         // prepare the patch
-        File tempDir = mkdir(new File(System.getProperty("java.io.tmpdir")), randomString());
         String patchID = randomString();
         File oneOffPatchDir = mkdir(tempDir, patchID);
 
@@ -151,7 +158,6 @@ public class OverridePreserveTestCase {
     @Test
     public void testOverrideMiscFiles() throws Exception {
         // prepare the patch
-        File tempDir = mkdir(new File(System.getProperty("java.io.tmpdir")), randomString());
         String patchID = randomString();
         File oneOffPatchDir = mkdir(tempDir, patchID);
 
@@ -217,7 +223,6 @@ public class OverridePreserveTestCase {
     @Test
     public void testOverrideAllMiscFiles() throws Exception {
         // prepare the patch
-        File tempDir = mkdir(new File(System.getProperty("java.io.tmpdir")), randomString());
         String patchID = randomString();
         File oneOffPatchDir = mkdir(tempDir, patchID);
 
@@ -283,7 +288,6 @@ public class OverridePreserveTestCase {
     @Test
     public void testOverrideOnePreserveOneMiscFile() throws Exception {
         // prepare the patch
-        File tempDir = mkdir(new File(System.getProperty("java.io.tmpdir")), randomString());
         String patchID = randomString();
         File oneOffPatchDir = mkdir(tempDir, patchID);
 
@@ -362,7 +366,6 @@ public class OverridePreserveTestCase {
         // prepare the patch
         String patchID = randomString();
         String baseLayerPatchID = randomString();
-        File tempDir = mkdir(new File(System.getProperty("java.io.tmpdir")), randomString());
         File patchDir = mkdir(tempDir, patchID);
 
         // create the patch with the updated module
