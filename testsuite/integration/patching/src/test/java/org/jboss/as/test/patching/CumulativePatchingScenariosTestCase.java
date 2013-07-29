@@ -17,10 +17,17 @@ import org.junit.runner.RunWith;
 import java.io.File;
 import java.io.IOException;
 
+import static org.jboss.as.patching.Constants.BASE;
 import static org.jboss.as.patching.IoUtils.mkdir;
 import static org.jboss.as.patching.IoUtils.recursiveDelete;
-import static org.jboss.as.test.patching.PatchingTestUtil.*;
-import static org.jboss.as.patching.Constants.BASE;
+import static org.jboss.as.test.patching.PatchingTestUtil.AS_VERSION;
+import static org.jboss.as.test.patching.PatchingTestUtil.CONTAINER;
+import static org.jboss.as.test.patching.PatchingTestUtil.PRODUCT;
+import static org.jboss.as.test.patching.PatchingTestUtil.assertPatchElements;
+import static org.jboss.as.test.patching.PatchingTestUtil.baseModuleDir;
+import static org.jboss.as.test.patching.PatchingTestUtil.createPatchXMLFile;
+import static org.jboss.as.test.patching.PatchingTestUtil.createZippedPatchFile;
+import static org.jboss.as.test.patching.PatchingTestUtil.randomString;
 
 /**
  * @author Martin Simka
@@ -37,6 +44,7 @@ public class CumulativePatchingScenariosTestCase {
     @Before
     public void prepare() throws IOException {
         tempDir = mkdir(new File(System.getProperty("java.io.tmpdir")), randomString());
+        assertPatchElements(baseModuleDir, null);
     }
 
     @After
