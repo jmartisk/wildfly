@@ -46,6 +46,8 @@ import static org.jboss.as.test.patching.PatchingTestUtil.AS_VERSION;
 import static org.jboss.as.test.patching.PatchingTestUtil.AS_DISTRIBUTION;
 import static org.jboss.as.test.patching.PatchingTestUtil.PATCHES_PATH;
 import static org.jboss.as.test.patching.PatchingTestUtil.FILE_SEPARATOR;
+import static org.jboss.as.test.patching.PatchingTestUtil.assertPatchElements;
+import static org.jboss.as.test.patching.PatchingTestUtil.baseModuleDir;
 import static org.jboss.as.test.patching.PatchingTestUtil.createModule0;
 import static org.jboss.as.test.patching.PatchingTestUtil.createPatchXMLFile;
 import static org.jboss.as.test.patching.PatchingTestUtil.createZippedPatchFile;
@@ -74,6 +76,7 @@ public class BasicOneOffPatchingScenariosTestCase {
     @Before
     public void prepare() throws IOException {
         tempDir = mkdir(new File(System.getProperty("java.io.tmpdir")), randomString());
+        assertPatchElements(baseModuleDir, null);
     }
 
     @After
@@ -161,7 +164,7 @@ public class BasicOneOffPatchingScenariosTestCase {
         final String testFilePath1 = AS_DISTRIBUTION + FILE_SEPARATOR+ Joiner.on(FILE_SEPARATOR).join(testFileSegments1);
         final String testContent1 = "test content1";
 
-        final String[] testFileSegments2 = new String[] {"testFile1.txt"};
+        final String[] testFileSegments2=  new String[] {"directory with spaces", "file with spaces"};
         final String testFilePath2 = AS_DISTRIBUTION + FILE_SEPARATOR + Joiner.on(FILE_SEPARATOR).join(testFileSegments2);
         final String testContent2 = "test content2";
 
@@ -983,6 +986,8 @@ public class BasicOneOffPatchingScenariosTestCase {
         Assert.assertFalse("The file " + resourceItem2.getItemName() + "should have been deleted", new File(modulePath1 + FILE_SEPARATOR + resourceItem2.getItemName()).exists());
         Assert.assertFalse("The file " + resourceItem1.getItemName() + "should have been deleted", new File(modulePath2 + FILE_SEPARATOR + resourceItem1.getItemName()).exists());
         Assert.assertFalse("The file " + resourceItem2.getItemName() + "should have been deleted", new File(modulePath2 + FILE_SEPARATOR + resourceItem2.getItemName()).exists());
+        Assert.assertFalse("The directory " + modulePath1 + "should have been deleted", new File(modulePath1).exists());
+        Assert.assertFalse("The directory " + modulePath2+ "should have been deleted", new File(modulePath2).exists());
 
         // reapply patch and check if server is in restart-required mode
         CliUtilsForPatching.applyPatch(zippedPatch.getAbsolutePath());
@@ -1015,6 +1020,8 @@ public class BasicOneOffPatchingScenariosTestCase {
 
         // creates an empty module
         File baseModuleDir = newFile(new File(PatchingTestUtil.AS_DISTRIBUTION), "modules", SYSTEM, LAYERS, BASE);
+        assertPatchElements(baseModuleDir, null);
+
         File moduleDir = createModule0(baseModuleDir, moduleName);
 
         System.out.println("moduleDir = " + moduleDir.getAbsolutePath());

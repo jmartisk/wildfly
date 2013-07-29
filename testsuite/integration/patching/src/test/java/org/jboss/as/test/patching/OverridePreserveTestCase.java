@@ -42,6 +42,8 @@ import static org.jboss.as.test.patching.PatchingTestUtil.CONTAINER;
 import static org.jboss.as.test.patching.PatchingTestUtil.PRODUCT;
 import static org.jboss.as.test.patching.PatchingTestUtil.AS_VERSION;
 import static org.jboss.as.test.patching.PatchingTestUtil.FILE_SEPARATOR;
+import static org.jboss.as.test.patching.PatchingTestUtil.assertPatchElements;
+import static org.jboss.as.test.patching.PatchingTestUtil.baseModuleDir;
 import static org.jboss.as.test.patching.PatchingTestUtil.createModule0;
 import static org.jboss.as.test.patching.PatchingTestUtil.createPatchXMLFile;
 import static org.jboss.as.test.patching.PatchingTestUtil.createZippedPatchFile;
@@ -79,6 +81,7 @@ public class OverridePreserveTestCase {
         file1originalContent = PatchingTestUtil.readFile(file1);
         file2originalContent = PatchingTestUtil.readFile(file2);
         tempDir = mkdir(new File(System.getProperty("java.io.tmpdir")), randomString());
+        assertPatchElements(baseModuleDir, null);
     }
 
     @After
