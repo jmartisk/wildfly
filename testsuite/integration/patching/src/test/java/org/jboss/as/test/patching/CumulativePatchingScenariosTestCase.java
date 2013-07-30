@@ -49,7 +49,7 @@ public class CumulativePatchingScenariosTestCase {
 
     @After
     public void cleanup() throws Exception {
-        if(controller.isStarted(CONTAINER))
+        if (controller.isStarted(CONTAINER))
             controller.stop(CONTAINER);
         CliUtilsForPatching.rollbackAll();
 
@@ -58,11 +58,11 @@ public class CumulativePatchingScenariosTestCase {
         }
     }
 
-    private File createOneOffPatchAddingMiscFile(String patchID) throws Exception {
+    private File createOneOffPatchAddingMiscFile(String patchID, String asVersion) throws Exception {
         File oneOffPatchDir = mkdir(tempDir, patchID);
         ContentModification miscFileAdded = ContentModificationUtils.addMisc(oneOffPatchDir, patchID,
                 "test content", "awesomeDirectory", "awesomeFile");
-        ProductConfig productConfig = new ProductConfig(PRODUCT, AS_VERSION, "main");
+        ProductConfig productConfig = new ProductConfig(PRODUCT, asVersion, "main");
         Patch oneOffPatch = PatchBuilder.create()
                 .setPatchId(patchID)
                 .setDescription("A one-off patch adding a misc file.")
@@ -74,17 +74,17 @@ public class CumulativePatchingScenariosTestCase {
         return createZippedPatchFile(oneOffPatchDir, patchID);
     }
 
-    private File createOneOffPatchAddingAModule(String patchID) throws Exception {
-        String layerPatchID  = randomString();
+    private File createOneOffPatchAddingAModule(String patchID, String asVersion) throws Exception {
+        String layerPatchID = randomString();
         File oneOffPatchDir = mkdir(tempDir, patchID);
 
-        final String moduleName =  "org.wildfly.awesomemodule";
+        final String moduleName = "org.wildfly.awesomemodule";
 
         final ResourceItem resourceItem1 = new ResourceItem("testFile1", "content1".getBytes());
         final ResourceItem resourceItem2 = new ResourceItem("testFile2", "content2".getBytes());
 
         ContentModification moduleAdded = ContentModificationUtils.addModule(oneOffPatchDir, layerPatchID, moduleName, resourceItem1, resourceItem2);
-        ProductConfig productConfig = new ProductConfig(PRODUCT, AS_VERSION, "main");
+        ProductConfig productConfig = new ProductConfig(PRODUCT, asVersion, "main");
         Patch oneOffPatch = PatchBuilder.create()
                 .setPatchId(patchID)
                 .setDescription("A one-off patch adding a new module.")
@@ -99,17 +99,17 @@ public class CumulativePatchingScenariosTestCase {
         return createZippedPatchFile(oneOffPatchDir, patchID);
     }
 
-    private File createCumulativePatch(String patchID) throws Exception {
-        String layerPatchID  = randomString();
+    private File createCumulativePatch(String patchID, String asVersion) throws Exception {
+        String layerPatchID = randomString();
         File oneOffPatchDir = mkdir(tempDir, patchID);
 
-        final String moduleName =  "patch.cumulative.awesomemodule";
+        final String moduleName = "patch.cumulative.awesomemodule";
 
         final ResourceItem resourceItem1 = new ResourceItem("testFile1", "content1".getBytes());
         final ResourceItem resourceItem2 = new ResourceItem("testFile2", "content2".getBytes());
 
         ContentModification moduleAdded = ContentModificationUtils.addModule(oneOffPatchDir, layerPatchID, moduleName, resourceItem1, resourceItem2);
-        ProductConfig productConfig = new ProductConfig(PRODUCT, AS_VERSION, "main");
+        ProductConfig productConfig = new ProductConfig(PRODUCT, asVersion, "main");
         Patch oneOffPatch = PatchBuilder.create()
                 .setPatchId(patchID)
                 .setDescription("A cp patch.")
@@ -123,18 +123,27 @@ public class CumulativePatchingScenariosTestCase {
         return createZippedPatchFile(oneOffPatchDir, patchID);
     }
 
+    /**
+     * Applies one-off that adds a misc file
+     * Applies one-off that adds a module
+     * Applies CP that adds a module, should invalidate all previously installed one-off
+     * does rollback of CP
+     * does rollback of all one-offs
+     *
+     * @throws Exception
+     */
     @Test
     public void testTwoOneOffsInvalidatedByCumulativePatch() throws Exception {
         String oneOffPatchID1 = randomString();
         String oneOffPatchID2 = randomString();
         String cpPatchID = randomString();
-        File oneOffZip1 = createOneOffPatchAddingMiscFile(oneOffPatchID1);
-        File oneOffZip2 = createOneOffPatchAddingAModule(oneOffPatchID2);
-        File cpZip = createCumulativePatch(cpPatchID);
+        File oneOffZip1 = createOneOffPatchAddingMiscFile(oneOffPatchID1, AS_VERSION);
+        File oneOffZip2 = createOneOffPatchAddingAModule(oneOffPatchID2, AS_VERSION);
+        File cpZip = createCumulativePatch(cpPatchID, AS_VERSION);
 
         // apply oneoffs
         controller.start(CONTAINER);
-        CliUtilsForPatching.applyPatch(oneOffZip1.getAbsolutePath());
+        Assert.assertTrue("Patch should be accepted", CliUtilsForPatching.applyPatch(oneOffZip1.getAbsolutePath()));
         Assert.assertTrue("server should be in restart-required mode",
                 CliUtilsForPatching.doesServerRequireRestart());
         controller.stop(CONTAINER);
@@ -142,7 +151,7 @@ public class CumulativePatchingScenariosTestCase {
         controller.start(CONTAINER);
         Assert.assertTrue("The patch " + oneOffPatchID1 + " should be listed as installed",
                 CliUtilsForPatching.getInstalledPatches().contains(oneOffPatchID1));
-        CliUtilsForPatching.applyPatch(oneOffZip2.getAbsolutePath());
+        Assert.assertTrue("Patch should be accepted", CliUtilsForPatching.applyPatch(oneOffZip2.getAbsolutePath()));
         Assert.assertTrue("server should be in restart-required mode",
                 CliUtilsForPatching.doesServerRequireRestart());
         controller.stop(CONTAINER);
@@ -152,7 +161,7 @@ public class CumulativePatchingScenariosTestCase {
                 CliUtilsForPatching.getInstalledPatches().contains(oneOffPatchID2));
 
         // apply cumulative patch
-        CliUtilsForPatching.applyPatch(cpZip.getAbsolutePath());
+        Assert.assertTrue("Patch should be accepted", CliUtilsForPatching.applyPatch(cpZip.getAbsolutePath()));
         Assert.assertTrue("server should be in restart-required mode",
                 CliUtilsForPatching.doesServerRequireRestart());
         controller.stop(CONTAINER);
@@ -166,7 +175,7 @@ public class CumulativePatchingScenariosTestCase {
                 CliUtilsForPatching.getInstalledPatches().contains(oneOffPatchID2));
 
         // rollback cumulative patch
-        CliUtilsForPatching.rollbackCumulativePatch(true);
+        Assert.assertTrue("Rollback should be accepted", CliUtilsForPatching.rollbackCumulativePatch(true));
         Assert.assertTrue("server should be in restart-required mode",
                 CliUtilsForPatching.doesServerRequireRestart());
         controller.stop(CONTAINER);
@@ -182,7 +191,7 @@ public class CumulativePatchingScenariosTestCase {
                 CliUtilsForPatching.getInstalledPatches().contains(oneOffPatchID2));
 
         //rollback oneoffs
-        CliUtilsForPatching.rollbackPatch(oneOffPatchID2);
+        Assert.assertTrue("Rollback should be accepted", CliUtilsForPatching.rollbackPatch(oneOffPatchID2));
         Assert.assertTrue("server should be in restart-required mode",
                 CliUtilsForPatching.doesServerRequireRestart());
         controller.stop(CONTAINER);
@@ -190,7 +199,7 @@ public class CumulativePatchingScenariosTestCase {
         controller.start(CONTAINER);
         Assert.assertFalse("The patch " + oneOffPatchID2 + " should NOT be listed as installed",
                 CliUtilsForPatching.getInstalledPatches().contains(oneOffPatchID2));
-        CliUtilsForPatching.rollbackPatch(oneOffPatchID1);
+        Assert.assertTrue("Rollback should be accepted", CliUtilsForPatching.rollbackPatch(oneOffPatchID1));
         Assert.assertTrue("server should be in restart-required mode",
                 CliUtilsForPatching.doesServerRequireRestart());
         controller.stop(CONTAINER);
@@ -200,4 +209,6 @@ public class CumulativePatchingScenariosTestCase {
                 CliUtilsForPatching.getInstalledPatches().contains(oneOffPatchID1));
         controller.stop(CONTAINER);
     }
+
+
 }
