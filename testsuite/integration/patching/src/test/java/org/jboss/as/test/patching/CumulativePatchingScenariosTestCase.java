@@ -115,7 +115,7 @@ public class CumulativePatchingScenariosTestCase {
                 .setDescription("A cp patch.")
                 .upgradeIdentity(productConfig.getProductName(), productConfig.getProductVersion(), "EAP with cp patch")
                 .getParent()
-                .oneOffPatchElement(layerPatchID, "base", false)
+                .upgradeElement(layerPatchID, "base", false)
                 .addContentModification(moduleAdded)
                 .getParent()
                 .build();
