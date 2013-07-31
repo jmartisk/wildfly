@@ -21,11 +21,8 @@
 
 package org.jboss.as.test.patching;
 
-import org.jboss.arquillian.container.test.api.ContainerController;
 import org.jboss.arquillian.container.test.api.RunAsClient;
 import org.jboss.arquillian.junit.Arquillian;
-import org.jboss.arquillian.test.api.ArquillianResource;
-import org.jboss.as.patching.IoUtils;
 import org.jboss.as.patching.metadata.ContentModification;
 import org.jboss.as.patching.metadata.Patch;
 import org.jboss.as.patching.metadata.PatchBuilder;
@@ -39,29 +36,27 @@ import org.junit.runner.RunWith;
 
 import java.io.File;
 
-import static org.jboss.as.test.patching.PatchingTestUtil.CONTAINER;
-import static org.jboss.as.test.patching.PatchingTestUtil.PRODUCT;
-import static org.jboss.as.test.patching.PatchingTestUtil.AS_VERSION;
-import static org.jboss.as.test.patching.PatchingTestUtil.FILE_SEPARATOR;
-import static org.jboss.as.test.patching.PatchingTestUtil.assertPatchElements;
-import static org.jboss.as.test.patching.PatchingTestUtil.baseModuleDir;
-import static org.jboss.as.test.patching.PatchingTestUtil.createModule0;
-import static org.jboss.as.test.patching.PatchingTestUtil.createPatchXMLFile;
-import static org.jboss.as.test.patching.PatchingTestUtil.createZippedPatchFile;
-import static org.jboss.as.test.patching.PatchingTestUtil.dump;
-import static org.jboss.as.test.patching.PatchingTestUtil.randomString;
 import static org.jboss.as.patching.Constants.BASE;
 import static org.jboss.as.patching.Constants.LAYERS;
 import static org.jboss.as.patching.Constants.SYSTEM;
 import static org.jboss.as.patching.IoUtils.mkdir;
 import static org.jboss.as.patching.IoUtils.newFile;
+import static org.jboss.as.test.patching.PatchingTestUtil.AS_VERSION;
+import static org.jboss.as.test.patching.PatchingTestUtil.CONTAINER;
+import static org.jboss.as.test.patching.PatchingTestUtil.FILE_SEPARATOR;
+import static org.jboss.as.test.patching.PatchingTestUtil.PRODUCT;
+import static org.jboss.as.test.patching.PatchingTestUtil.createModule0;
+import static org.jboss.as.test.patching.PatchingTestUtil.createPatchXMLFile;
+import static org.jboss.as.test.patching.PatchingTestUtil.createZippedPatchFile;
+import static org.jboss.as.test.patching.PatchingTestUtil.dump;
+import static org.jboss.as.test.patching.PatchingTestUtil.randomString;
 
 /**
  * @author Jan Martiska
  */
 @RunWith(Arquillian.class)
 @RunAsClient
-public class OverridePreserveTestCase {
+public class OverridePreserveTestCase extends AbstractPatchingTestCase {
 
     private static final Logger logger = Logger.getLogger(OverridePreserveTestCase.class);
 
@@ -75,30 +70,17 @@ public class OverridePreserveTestCase {
     private String file2originalContent;
     private final String file2modifiedContent = "I manually edited LICENSE.txt and it now looks like this.";
 
-    private File tempDir;
-
-    @ArquillianResource
-    private ContainerController controller;
 
     @Before
     public void setUp() throws Exception {
         file1originalContent = PatchingTestUtil.readFile(file1);
         file2originalContent = PatchingTestUtil.readFile(file2);
-        tempDir = mkdir(new File(System.getProperty("java.io.tmpdir")), randomString());
-        assertPatchElements(baseModuleDir, null);
     }
 
     @After
     public void cleanup() throws Exception {
-        if(controller.isStarted(CONTAINER))
-            controller.stop(CONTAINER);
-        CliUtilsForPatching.rollbackAll();
         PatchingTestUtil.setFileContent(file1, file1originalContent);
         PatchingTestUtil.setFileContent(file2, file2originalContent);
-
-        if (IoUtils.recursiveDelete(tempDir)) {
-            tempDir.deleteOnExit();
-        }
     }
 
     /**
@@ -159,7 +141,7 @@ public class OverridePreserveTestCase {
         controller.stop(CONTAINER);
 
         controller.start(CONTAINER);
-        Assert.assertFalse("The patch " + patchID + " NOT should be listed as installed" ,
+        Assert.assertFalse("The patch " + patchID + " NOT should be listed as installed",
                 CliUtilsForPatching.getInstalledPatches().contains(patchID));
         Assert.assertEquals("Misc file should not be overridden", file1modifiedContent, PatchingTestUtil.readFile(file1));
         Assert.assertEquals("Misc file should not be overridden", file2modifiedContent, PatchingTestUtil.readFile(file2));
@@ -224,7 +206,7 @@ public class OverridePreserveTestCase {
         controller.stop(CONTAINER);
 
         controller.start(CONTAINER);
-        Assert.assertFalse("The patch " + patchID + " NOT should be listed as installed" ,
+        Assert.assertFalse("The patch " + patchID + " NOT should be listed as installed",
                 CliUtilsForPatching.getInstalledPatches().contains(patchID));
         Assert.assertEquals("Misc file should not be overridden", file1patchedContent, PatchingTestUtil.readFile(file1));
         Assert.assertEquals("Misc file should be restored", file2modifiedContent, PatchingTestUtil.readFile(file2));
@@ -289,7 +271,7 @@ public class OverridePreserveTestCase {
         controller.stop(CONTAINER);
 
         controller.start(CONTAINER);
-        Assert.assertFalse("The patch " + patchID + " NOT should be listed as installed" ,
+        Assert.assertFalse("The patch " + patchID + " NOT should be listed as installed",
                 CliUtilsForPatching.getInstalledPatches().contains(patchID));
         Assert.assertEquals("Misc file should not be overridden", file1patchedContent, PatchingTestUtil.readFile(file1));
         Assert.assertEquals("Misc file should be restored", file2modifiedContent, PatchingTestUtil.readFile(file2));
@@ -356,7 +338,7 @@ public class OverridePreserveTestCase {
         controller.stop(CONTAINER);
 
         controller.start(CONTAINER);
-        Assert.assertFalse("The patch " + patchID + " NOT should be listed as installed" ,
+        Assert.assertFalse("The patch " + patchID + " NOT should be listed as installed",
                 CliUtilsForPatching.getInstalledPatches().contains(patchID));
         Assert.assertEquals("Misc file should not be overridden", file1modifiedContent, PatchingTestUtil.readFile(file1));
         Assert.assertEquals("Misc file should be restored", file2modifiedContent, PatchingTestUtil.readFile(file2));
@@ -427,7 +409,7 @@ public class OverridePreserveTestCase {
         controller.stop(CONTAINER);
 
         controller.start(CONTAINER);
-        Assert.assertFalse("The patch " + patchID + " NOT should be listed as installed" ,
+        Assert.assertFalse("The patch " + patchID + " NOT should be listed as installed",
                 CliUtilsForPatching.getInstalledPatches().contains(patchID));
         controller.stop(CONTAINER);
     }

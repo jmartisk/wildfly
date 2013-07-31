@@ -22,6 +22,21 @@
 
 package org.jboss.as.test.patching;
 
+import org.jboss.arquillian.container.test.api.RunAsClient;
+import org.jboss.arquillian.junit.Arquillian;
+import org.jboss.as.cli.CommandContext;
+import org.jboss.as.patching.HashUtils;
+import org.jboss.as.patching.metadata.ContentModification;
+import org.jboss.as.patching.metadata.Patch;
+import org.jboss.as.patching.metadata.PatchBuilder;
+import org.jboss.as.test.integration.management.util.CLITestUtil;
+import org.jboss.as.version.ProductConfig;
+import org.junit.Before;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+
+import java.io.File;
+
 import static org.jboss.as.patching.Constants.BASE;
 import static org.jboss.as.patching.Constants.BUNDLES;
 import static org.jboss.as.patching.Constants.LAYERS;
@@ -41,25 +56,6 @@ import static org.jboss.as.test.patching.PatchingTestUtil.touch;
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.fail;
 
-import java.io.File;
-
-import org.jboss.arquillian.container.test.api.ContainerController;
-import org.jboss.arquillian.container.test.api.RunAsClient;
-import org.jboss.arquillian.junit.Arquillian;
-import org.jboss.arquillian.test.api.ArquillianResource;
-import org.jboss.as.cli.CommandContext;
-import org.jboss.as.patching.HashUtils;
-import org.jboss.as.patching.IoUtils;
-import org.jboss.as.patching.metadata.ContentModification;
-import org.jboss.as.patching.metadata.Patch;
-import org.jboss.as.patching.metadata.PatchBuilder;
-import org.jboss.as.test.integration.management.util.CLITestUtil;
-import org.jboss.as.version.ProductConfig;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
-import org.junit.runner.RunWith;
-
 
 /**
  * @author Alexey Loubyansky
@@ -67,29 +63,13 @@ import org.junit.runner.RunWith;
  */
 @RunWith(Arquillian.class)
 @RunAsClient
-public class RollbackLastUnitTestCase {
+public class RollbackLastUnitTestCase extends AbstractPatchingTestCase {
 
-    @ArquillianResource
-    private ContainerController controller;
-
-    protected File tempDir;
     protected ProductConfig productConfig;
 
     @Before
     public void setup() throws Exception {
-        tempDir = mkdir(new File(System.getProperty("java.io.tmpdir")), randomString());
         productConfig = new ProductConfig(PatchingTestUtil.PRODUCT, PatchingTestUtil.AS_VERSION, "main");
-    }
-
-    @After
-    public void cleanup() throws Exception {
-        if(controller.isStarted(CONTAINER))
-            controller.stop(CONTAINER);
-        CliUtilsForPatching.rollbackAll();
-
-        if (IoUtils.recursiveDelete(tempDir)) {
-            tempDir.deleteOnExit();
-        }
     }
 
     @Test
