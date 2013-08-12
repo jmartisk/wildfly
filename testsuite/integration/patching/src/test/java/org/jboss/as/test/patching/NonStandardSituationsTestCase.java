@@ -22,6 +22,8 @@
 
 package org.jboss.as.test.patching;
 
+import java.io.File;
+
 import org.jboss.arquillian.container.test.api.RunAsClient;
 import org.jboss.arquillian.junit.Arquillian;
 import org.jboss.as.patching.metadata.ContentModification;
@@ -29,13 +31,11 @@ import org.jboss.as.patching.metadata.Patch;
 import org.jboss.as.patching.metadata.PatchBuilder;
 import org.jboss.as.version.ProductConfig;
 import org.jboss.logging.Logger;
+import org.junit.After;
 import org.junit.Assert;
 import org.junit.Assume;
-import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
-
-import java.io.File;
 
 import static org.jboss.as.patching.IoUtils.mkdir;
 import static org.jboss.as.test.patching.PatchingTestUtil.AS_DISTRIBUTION;
@@ -58,6 +58,16 @@ public class NonStandardSituationsTestCase extends AbstractPatchingTestCase {
 
     private static final Logger logger = Logger.getLogger(NonStandardSituationsTestCase.class);
 
+    private String testFilePath2;
+
+    /**
+     * We revoked some write permissions during tests, so we have to return it back
+     */
+    @After
+    public void cleanupWritePermissions() {
+        new File(testFilePath2).setWritable(true);
+    }
+
 
     /**
      * bug: https://issues.jboss.org/browse/WFLY-1803
@@ -78,7 +88,7 @@ public class NonStandardSituationsTestCase extends AbstractPatchingTestCase {
         setFileContent(testFilePath1, originalContent1);
 
         final String testFile2Name = "f2_" + randomString();
-        final String testFilePath2 = AS_DISTRIBUTION + FILE_SEPARATOR + testFile2Name;
+        testFilePath2 = AS_DISTRIBUTION + FILE_SEPARATOR + testFile2Name;
         final String testContent2 = "test content2";
         final String originalContent2 = "original content2";
         setFileContent(testFilePath2, originalContent2);
