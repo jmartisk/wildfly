@@ -1079,6 +1079,10 @@ public class BasicOneOffPatchingScenariosTestCase extends AbstractPatchingTestCa
                 .miscFile(new ResourceItem("res1", "new resource in the module".getBytes()))
                 .build();
 
+        // Also see if we can update jboss-modules
+        final File installation = new File(AS_DISTRIBUTION);
+        final ContentModification jbossModulesModification = PatchingTestUtil.updateModulesJar(installation, new File(patchDir, baseLayerPatchID));
+
         // create the patch with the updated module
         ContentModification moduleModified = ContentModificationUtils.modifyModule(patchDir, baseLayerPatchID, HashUtils.hashFile(moduleDir), updatedModule);
 
@@ -1089,6 +1093,7 @@ public class BasicOneOffPatchingScenariosTestCase extends AbstractPatchingTestCa
                 .getParent()
                 .oneOffPatchElement(baseLayerPatchID, BASE, false)
                 .addContentModification(moduleModified)
+                .addContentModification(jbossModulesModification)
                 .getParent()
                 .build();
         createPatchXMLFile(patchDir, patch);
