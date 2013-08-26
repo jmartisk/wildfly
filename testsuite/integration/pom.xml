@@ -63,7 +63,6 @@
                 <module>clust</module>
                 <module>multinode</module>
                 <module>manualmode</module>
-                <module>patching</module>
             </modules>
         </profile>
         <!-- Define ts.integration uber-group. -->
@@ -80,7 +79,6 @@
                 <module>rbac</module>
                 <module>multinode</module>
                 <module>manualmode</module>
-                <module>patching</module>
             </modules>
         </profile>
 
