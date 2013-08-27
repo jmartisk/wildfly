@@ -21,37 +21,6 @@
 
 package org.jboss.as.test.patching;
 
-import static java.lang.String.format;
-import static org.jboss.as.patching.Constants.BASE;
-import static org.jboss.as.patching.Constants.LAYERS;
-import static org.jboss.as.patching.Constants.MODULES;
-import static org.jboss.as.patching.Constants.OVERLAYS;
-import static org.jboss.as.patching.Constants.SYSTEM;
-import static org.jboss.as.patching.IoUtils.mkdir;
-import static org.jboss.as.patching.IoUtils.newFile;
-import static org.jboss.as.patching.IoUtils.safeClose;
-import static org.jboss.as.patching.PatchLogger.ROOT_LOGGER;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertTrue;
-
-import java.io.File;
-import java.io.FileFilter;
-import java.io.FileNotFoundException;
-import java.io.FileOutputStream;
-import java.io.FileWriter;
-import java.io.IOException;
-import java.io.OutputStream;
-import java.nio.charset.Charset;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Properties;
-import java.util.Scanner;
-import java.util.UUID;
-import java.util.jar.Attributes.Name;
-import java.util.jar.JarOutputStream;
-import java.util.jar.Manifest;
-
 import com.google.common.base.Joiner;
 import org.jboss.as.patching.Constants;
 import org.jboss.as.patching.DirectoryStructure;
@@ -72,6 +41,37 @@ import org.jboss.shrinkwrap.api.exporter.ZipExporter;
 import org.jboss.shrinkwrap.api.spec.JavaArchive;
 import org.junit.Assert;
 
+import java.io.File;
+import java.io.FileFilter;
+import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
+import java.io.FileWriter;
+import java.io.IOException;
+import java.io.OutputStream;
+import java.nio.charset.Charset;
+import java.util.Arrays;
+import java.util.List;
+import java.util.Properties;
+import java.util.Scanner;
+import java.util.UUID;
+import java.util.jar.Attributes.Name;
+import java.util.jar.JarOutputStream;
+import java.util.jar.Manifest;
+
+import static java.lang.String.format;
+import static org.jboss.as.patching.Constants.BASE;
+import static org.jboss.as.patching.Constants.LAYERS;
+import static org.jboss.as.patching.Constants.MODULES;
+import static org.jboss.as.patching.Constants.OVERLAYS;
+import static org.jboss.as.patching.Constants.SYSTEM;
+import static org.jboss.as.patching.IoUtils.mkdir;
+import static org.jboss.as.patching.IoUtils.newFile;
+import static org.jboss.as.patching.IoUtils.safeClose;
+import static org.jboss.as.patching.PatchLogger.ROOT_LOGGER;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertTrue;
+
 /**
  * @author Jan Martiska, Jeff Mesnil
  */
@@ -91,7 +91,7 @@ public class PatchingTestUtil {
     private static final String RELATIVE_MODULES_PATH = Joiner.on(FILE_SEPARATOR).join(new String[] {MODULES, SYSTEM, LAYERS, BASE});
     public static final String MODULES_PATH = AS_DISTRIBUTION + FILE_SEPARATOR + RELATIVE_MODULES_PATH;
     public static final File BASE_MODULE_DIRECTORY = newFile(new File(PatchingTestUtil.AS_DISTRIBUTION), MODULES, SYSTEM, LAYERS, BASE);
-    public static final boolean doCleanup = Boolean.getBoolean("cleanup.tmp");
+    public static final boolean DO_CLEANUP = Boolean.getBoolean("cleanup.tmp");
 
     public static String randomString() {
         return UUID.randomUUID().toString();
