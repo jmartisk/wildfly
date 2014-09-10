@@ -1,0 +1,25 @@
+<jboss:ejb-jar xmlns:jboss="http://www.jboss.com/xml/ns/javaee"
+               xmlns="http://java.sun.com/xml/ns/javaee"
+               xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+               xsi:schemaLocation="http://www.jboss.com/xml/ns/javaee http://www.jboss.org/j2ee/schema/jboss-ejb3-2_0.xsd
+        http://java.sun.com/xml/ns/javaee http://java.sun.com/xml/ns/javaee/ejb-jar_3_1.xsd"
+               version="3.1"
+               impl-version="2.0">
+
+    <assembly-descriptor>
+        <method-permission>
+            <method>
+                <ejb-name>*</ejb-name>
+                <method-name>restrictedMethod</method-name>
+            </method>
+            <role-name>admin</role-name>
+        </method-permission>
+        <exclude-list>
+            <method>
+                <ejb-name>*</ejb-name>
+                <method-name>excludedMethod</method-name>
+            </method>
+        </exclude-list>
+    </assembly-descriptor>
+
+</jboss:ejb-jar>
