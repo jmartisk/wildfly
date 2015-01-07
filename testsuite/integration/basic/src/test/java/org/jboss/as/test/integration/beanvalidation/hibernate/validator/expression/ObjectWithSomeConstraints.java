@@ -1,5 +1,6 @@
 package org.jboss.as.test.integration.beanvalidation.hibernate.validator.expression;
 
+import javax.validation.constraints.NotNull;
 import javax.validation.constraints.Pattern;
 
 /**
@@ -7,10 +8,12 @@ import javax.validation.constraints.Pattern;
  */
 public class ObjectWithSomeConstraints {
 
-    public ObjectWithSomeConstraints() {
-    }
+//    public ObjectWithSomeConstraints() {
+//    }
 
-    @Pattern(regexp = "${regex:ggz}")
+    @Pattern(regexp = "y.*", message = "${property:DEFAULT-MESSAGE}")
+    @NotNull
+//    @Pattern(regexp = "${regex:ggz}")
     private String stringConstrainedByARegex;
 
     public String getStringConstrainedByARegex() {

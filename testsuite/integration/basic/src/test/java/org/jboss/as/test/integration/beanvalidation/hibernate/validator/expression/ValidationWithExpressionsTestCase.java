@@ -1,12 +1,10 @@
 package org.jboss.as.test.integration.beanvalidation.hibernate.validator.expression;
 
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.Set;
 import javax.ejb.EJB;
+import javax.inject.Inject;
 import javax.validation.ConstraintViolation;
-import javax.validation.Validation;
-import javax.validation.Validator;
 
 import org.jboss.arquillian.container.test.api.Deployment;
 import org.jboss.arquillian.junit.Arquillian;
@@ -14,10 +12,13 @@ import org.jboss.as.arquillian.api.ServerSetup;
 import org.jboss.as.arquillian.api.ServerSetupTask;
 import org.jboss.as.arquillian.container.ManagementClient;
 import org.jboss.as.controller.client.helpers.ClientConstants;
+import org.jboss.as.test.integration.weld.alternative.AlternativeBean;
 import org.jboss.dmr.ModelNode;
 import org.jboss.shrinkwrap.api.ShrinkWrap;
+import org.jboss.shrinkwrap.api.asset.StringAsset;
 import org.jboss.shrinkwrap.api.spec.JavaArchive;
 import org.junit.Assert;
+import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
@@ -75,21 +76,33 @@ public class ValidationWithExpressionsTestCase {
     }
 
     @EJB
-    ValidatingEJB ejb;
+    private ValidatingEJB ejb;
+
+    @Inject
+    private ObjectWithSomeConstraints object;
 
     @Deployment
     public static JavaArchive deployment() {
         JavaArchive archive = ShrinkWrap.create(JavaArchive.class);
         archive.addPackage(ValidationWithExpressionsTestCase.class.getPackage());
+        archive.addAsManifestResource(
+                ValidationWithExpressionsTestCase.class.getPackage(), "jboss.properties",
+                "jboss.properties");
+        archive.addAsManifestResource(new StringAsset("<beans></beans>"), "beans.xml");
         return archive;
+    }
+
+    @Before
+    public void setup() {
+        object.setStringConstrainedByARegex("x");
     }
 
     @Test
     public void doit() {
-        ObjectWithSomeConstraints object = new ObjectWithSomeConstraints();
-        object.setStringConstrainedByARegex("x");
+//        ObjectWithSomeConstraints object = new ObjectWithSomeConstraints();
+//        object.setStringConstrainedByARegex("x");
         Set<ConstraintViolation<ObjectWithSomeConstraints>> violations = ejb.validateObject(object);
-        if(!violations.isEmpty()) {
+        if (!violations.isEmpty()) {
             Assert.fail("Validation failed, violations = " + Arrays.toString(violations.toArray()));
         }
     }
