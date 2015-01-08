@@ -42,10 +42,14 @@ import org.jboss.as.arquillian.container.ManagementClient;
 import org.jboss.as.controller.client.helpers.ClientConstants;
 import org.jboss.as.test.integration.ejb.remote.common.EJBManagementUtil;
 import org.jboss.dmr.ModelNode;
+import org.jboss.ejb3.annotation.Pool;
 import org.jboss.logging.Logger;
 import org.jboss.shrinkwrap.api.Archive;
 import org.jboss.shrinkwrap.api.ShrinkWrap;
+import org.jboss.shrinkwrap.api.asset.StringAsset;
 import org.jboss.shrinkwrap.api.spec.JavaArchive;
+import org.jboss.shrinkwrap.descriptor.api.Descriptors;
+import org.jboss.shrinkwrap.descriptor.api.spec.se.manifest.ManifestDescriptor;
 import org.junit.Assert;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -134,6 +138,10 @@ public class PoolOverrideTestCase {
         jar.addAsManifestResource(PoolOverrideTestCase.class.getPackage(), "jboss-ejb3.xml", "jboss-ejb3.xml");
         jar.addAsManifestResource(PoolOverrideTestCase.class.getPackage(), "jboss.properties",
                 "jboss.properties");
+        jar.setManifest(new StringAsset(
+                Descriptors.create(ManifestDescriptor.class)
+                        .attribute("Dependencies", "org.jboss.ejb3")
+                        .exportAsString()));
         jar.addAsResource(createPermissionsXmlAsset(new RuntimePermission("modifyThread")),
                 "META-INF/jboss-permissions.xml");
         return jar;
@@ -155,6 +163,7 @@ public class PoolOverrideTestCase {
     public void testSLSBWithPoolAnnotationWithExpression() throws Exception {
         final PoolAnnotatedWithExpressionEJB bean = InitialContext.doLookup("java:module/" + PoolAnnotatedWithExpressionEJB.class.getSimpleName());
         this.testSimulatenousInvocationOnEJBsWithSingleInstanceInPool(bean);
+        Assert.fail(PoolAnnotatedWithExpressionEJB.class.getAnnotation(Pool.class).value());
     }
 
     /**

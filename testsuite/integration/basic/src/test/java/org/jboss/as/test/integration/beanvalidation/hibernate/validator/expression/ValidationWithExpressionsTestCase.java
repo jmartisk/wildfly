@@ -3,6 +3,7 @@ package org.jboss.as.test.integration.beanvalidation.hibernate.validator.express
 import java.util.Arrays;
 import java.util.Set;
 import javax.ejb.EJB;
+import javax.ejb.Singleton;
 import javax.inject.Inject;
 import javax.validation.ConstraintViolation;
 
@@ -101,6 +102,7 @@ public class ValidationWithExpressionsTestCase {
     public void doit() {
 //        ObjectWithSomeConstraints object = new ObjectWithSomeConstraints();
 //        object.setStringConstrainedByARegex("x");
+        System.out.println("EJB NAME SEEN PROGRAMATICALLY::: " + ValidatingEJB.class.getAnnotation(Singleton.class).name());
         Set<ConstraintViolation<ObjectWithSomeConstraints>> violations = ejb.validateObject(object);
         if (!violations.isEmpty()) {
             Assert.fail("Validation failed, violations = " + Arrays.toString(violations.toArray()));
