@@ -22,6 +22,7 @@
 
 package org.wildfly.test.integration.elytron.batch;
 
+import java.security.AllPermission;
 import java.util.Properties;
 import java.util.concurrent.Callable;
 import java.util.concurrent.CompletableFuture;
@@ -40,6 +41,7 @@ import org.jboss.as.arquillian.container.ManagementClient;
 import org.jboss.as.controller.PathAddress;
 import org.jboss.as.test.shared.ServerReload;
 import org.jboss.as.test.shared.TimeoutUtil;
+import org.jboss.as.test.shared.integration.ejb.security.PermissionUtils;
 import org.jboss.dmr.ModelNode;
 import org.jboss.shrinkwrap.api.Archive;
 import org.jboss.shrinkwrap.api.ShrinkWrap;
@@ -104,6 +106,7 @@ public class BatchSubsystemSecurityTestCase {
                 "long-running-batchlet.xml",
                 "batch-jobs/long-running-batchlet.xml");
         jar.addAsManifestResource(EmptyAsset.INSTANCE, "beans.xml");
+        jar.addAsManifestResource(PermissionUtils.createPermissionsXmlAsset(new AllPermission()), "permissions.xml");
         return jar;
     }
 
