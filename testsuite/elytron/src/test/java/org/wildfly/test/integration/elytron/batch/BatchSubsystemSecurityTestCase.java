@@ -43,7 +43,7 @@ import org.jboss.as.test.shared.TimeoutUtil;
 import org.jboss.dmr.ModelNode;
 import org.jboss.shrinkwrap.api.Archive;
 import org.jboss.shrinkwrap.api.ShrinkWrap;
-import org.jboss.shrinkwrap.api.asset.StringAsset;
+import org.jboss.shrinkwrap.api.asset.EmptyAsset;
 import org.jboss.shrinkwrap.api.spec.JavaArchive;
 import org.junit.Assert;
 import org.junit.Before;
@@ -94,38 +94,16 @@ public class BatchSubsystemSecurityTestCase {
                 IdentityBatchlet.class,
                 FailingBatchlet.class,
                 LongRunningBatchlet.class);
-//        jar.addAsManifestResource(BatchSubsystemSecurityTestCase.class.getPackage(),
-//                "assert-identityWithinJob.xml",
-//                "batch-jobs/assert-identityWithinJob.xml");
-        jar.addAsManifestResource(new StringAsset(""), "beans.xml");
-        jar.addAsManifestResource(new StringAsset(
-                 "<job id=\"assert-identityWithinJob\" xmlns=\"http://xmlns.jcp.org/xml/ns/javaee\" version=\"1.0\">\n"
-                + "\n"
-                + "    <step id=\"perform\">\n"
-                + "        <batchlet ref=\"identityBatchlet\"/>\n"
-                + "    </step>\n"
-                + "\n"
-                + "</job>"), "batch-jobs/assert-identity.xml");
-        jar.addAsManifestResource(new StringAsset(
-                "<job id=\"failing-batchlet\" xmlns=\"http://xmlns.jcp.org/xml/ns/javaee\" version=\"1.0\">\n"
-                + "\n"
-                + "    <step id=\"perform\">\n"
-                + "        <batchlet ref=\"failingBatchlet\">\n"
-                + "            <properties>     \n"
-                + "                <property name=\"should.fail\" value=\"#{jobParameters['should.fail']}\"/>\n"
-                + "            </properties>\n"
-                + "        </batchlet>\n"
-                + "    </step>\n"
-                + "\n"
-                + "</job>"), "batch-jobs/failing-batchlet.xml");
-        jar.addAsManifestResource(new StringAsset(
-                 "<job id=\"long-running-batchlet\" xmlns=\"http://xmlns.jcp.org/xml/ns/javaee\" version=\"1.0\">\n"
-                + "\n"
-                + "    <step id=\"perform\">\n"
-                + "        <batchlet ref=\"longRunningBatchlet\"/>\n"
-                + "    </step>\n"
-                + "\n"
-                + "</job>"), "batch-jobs/long-running-batchlet.xml");
+        jar.addAsManifestResource(BatchSubsystemSecurityTestCase.class.getPackage(),
+                "assert-identity.xml",
+                "batch-jobs/assert-identity.xml");
+        jar.addAsManifestResource(BatchSubsystemSecurityTestCase.class.getPackage(),
+                "failing-batchlet.xml",
+                "batch-jobs/failing-batchlet.xml");
+        jar.addAsManifestResource(BatchSubsystemSecurityTestCase.class.getPackage(),
+                "long-running-batchlet.xml",
+                "batch-jobs/long-running-batchlet.xml");
+        jar.addAsManifestResource(EmptyAsset.INSTANCE, "beans.xml");
         return jar;
     }
 
