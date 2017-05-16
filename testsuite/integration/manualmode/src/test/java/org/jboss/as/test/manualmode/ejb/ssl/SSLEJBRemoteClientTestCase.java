@@ -63,7 +63,7 @@ import java.util.concurrent.Future;
  */
 @RunWith(Arquillian.class)
 @RunAsClient
-@Ignore("WFLY-1836")
+//@Ignore("WFLY-1836")
 public class SSLEJBRemoteClientTestCase {
     private static final Logger log = Logger.getLogger(SSLEJBRemoteClientTestCase.class);
     private static final String MODULE_NAME_STATELESS = "ssl-remote-ejb-client-test";
