@@ -36,10 +36,10 @@ public class MicroProfileMetricsHistogramResource {
    @GET
    @Path("/hello/{n}")
    public Response hello(@PathParam("n") String n) {
-      Metadata histogramMetadata = new Metadata("helloHistogram", MetricType.HISTOGRAM);
+      Metadata histogramMetadata = Metadata.builder().withName("helloHistogram").withType(MetricType.HISTOGRAM).build();
 
       // TODO: Remove following line once https://github.com/smallrye/smallrye-metrics/issues/42 is fixed
-      histogramMetadata.setReusable(true); // workaround
+//      histogramMetadata.setReusable(true); // workaround
 
       Histogram histogram = registry.histogram(histogramMetadata);
       histogram.update(Long.valueOf(n));

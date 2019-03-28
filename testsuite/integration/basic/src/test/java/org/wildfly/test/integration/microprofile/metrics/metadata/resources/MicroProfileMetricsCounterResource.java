@@ -34,10 +34,10 @@ public class MicroProfileMetricsCounterResource {
    @GET
    @Path("/hello")
    public Response hello() {
-      Metadata counterMetadata = new Metadata("helloCounter", MetricType.COUNTER);
+      Metadata counterMetadata = Metadata.builder().withName("helloCounter").withType(MetricType.COUNTER).build();
 
       // TODO: Remove following line once https://github.com/smallrye/smallrye-metrics/issues/43 is fixed
-      counterMetadata.setReusable(true); // workaround
+//      counterMetadata.setReusable(true); // workaround
 
       registry.counter(counterMetadata).inc();
       return Response.ok("Hello World!").build();
